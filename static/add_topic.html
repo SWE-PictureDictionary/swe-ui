@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Topic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 24px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: black;
+            font-weight: bold;
+        }
+
+        form {
+            max-width: 500px;
+            display: grid;
+            gap: 14px;
+        }
+
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        #preview {
+            max-width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: none;
+        }
+
+        #message {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<a class="back-link" href="/topic_list.html">← Back to Topics</a>
+
+<h1>Add a Topic</h1>
+
+<form id="addTopicForm">
+    <label for="title">Topic name</label>
+    <input id="title" name="title" type="text" placeholder="Example: Animals" required>
+
+    <label for="imageFile">Upload topic image</label>
+    <input id="imageFile" name="imageFile" type="file" accept="image/*" required>
+
+    <img id="preview" alt="Image preview">
+
+    <button type="submit">Create Topic</button>
+</form>
+
+<p id="message"></p>
+
+<script>
+    const form = document.getElementById("addTopicForm");
+    const imageFileInput = document.getElementById("imageFile");
+    const preview = document.getElementById("preview");
+    const message = document.getElementById("message");
+
+    let imageDataUrl = "";
+
+    imageFileInput.addEventListener("change", () => {
+        const file = imageFileInput.files[0];
+
+        if (!file) {
+            imageDataUrl = "";
+            preview.style.display = "none";
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            imageDataUrl = event.target.result;
+            preview.src = imageDataUrl;
+            preview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+    });
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const title = document.getElementById("title").value.trim();
+
+        if (!title || !imageDataUrl) {
+            message.textContent = "Please enter a title and choose an image.";
+            return;
+        }
+
+        try {
+            const response = await fetch("/topics", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    title: title,
+                    imageUrl: imageDataUrl
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const createdTopic = await response.json();
+            message.textContent = "Topic created successfully.";
+
+            setTimeout(() => {
+                window.location.href = `/topic.html?id=${createdTopic.id}`;
+            }, 800);
+
+        } catch (error) {
+            console.error(error);
+            message.textContent = "Could not create topic.";
+        }
+    });
+</script>
+
+</body>
+</html>

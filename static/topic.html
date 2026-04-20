@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Topic Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 24px;
+            margin: 0;
+            background: #f4f6f8;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: black;
+            font-weight: bold;
+        }
+
+        .page-layout {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .scene-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin: 20px 0;
+        }
+
+        .topic-image {
+            width: 100%;
+            display: block;
+            border-radius: 12px;
+            border: 1px solid #ccc;
+            background: white;
+        }
+
+        .hotspot-button {
+            position: absolute;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid black;
+            background: #b4b4b4;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+        }
+
+        .hotspot-button:hover {
+            background: #8f8f8f;
+        }
+
+        .study-sidebar {
+            width: 300px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            padding: 18px;
+            box-sizing: border-box;
+            position: sticky;
+            top: 24px;
+        }
+
+        .study-sidebar h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+
+        .study-sidebar p {
+            margin-top: 0;
+            color: #444;
+        }
+
+        .studied-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .studied-card {
+            background: #e9ecef;
+            border: 1px solid #bbb;
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .studied-word {
+            font-weight: bold;
+            font-size: 17px;
+            margin-bottom: 6px;
+        }
+
+        .studied-translation {
+            color: #333;
+            font-size: 15px;
+        }
+
+        .empty-message {
+            color: #666;
+            font-style: italic;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 420px;
+            margin: 12% auto;
+            padding: 24px;
+            border-radius: 14px;
+            position: relative;
+            text-align: center;
+        }
+
+        .close-button {
+            position: absolute;
+            right: 14px;
+            top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .popup-word {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .popup-translation {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 14px;
+        }
+
+        .popup-image {
+            width: 100%;
+            max-width: 220px;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        @media (max-width: 900px) {
+            .page-layout {
+                flex-direction: column;
+            }
+
+            .study-sidebar {
+                width: 100%;
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<a class="back-link" href="/topic_list.html">← Back to Topics</a>
+
+<div class="page-layout">
+    <div class="main-content">
+        <h1 id="topicTitle">Topic</h1>
+        <p id="language"></p>
+
+        <div class="scene-wrapper" id="sceneWrapper">
+            <img id="topicImage" class="topic-image" alt="Topic image">
+        </div>
+    </div>
+
+    <aside class="study-sidebar">
+        <h2>Studied Words</h2>
+        <div id="studiedList" class="studied-list">
+            <div class="empty-message" id="emptyMessage">No words studied yet.</div>
+        </div>
+    </aside>
+</div>
+
+<div id="translationModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" id="closeModal">&times;</span>
+        <div class="popup-word" id="popupLabel">Word</div>
+        <div class="popup-translation" id="popupTranslation">Translation</div>
+        <img id="popupImage" class="popup-image" alt="Selected object" style="display:none;">
+        <audio id="popupAudio" class="popup-audio" style="display:none;"></audio>
+    </div>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    const selectedLanguage = localStorage.getItem("selectedLanguage") || "Spanish";
+    const API_BASE = "/topics";
+
+    const studiedWords = [];
+    const studiedList = document.getElementById("studiedList");
+
+    document.getElementById("language").innerText =
+        `Learning language: ${selectedLanguage}`;
+
+    const modal = document.getElementById("translationModal");
+    const closeModal = document.getElementById("closeModal");
+
+    async function loadTopic() {
+        try {
+            const response = await fetch(`${API_BASE}/${id}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const topic = await response.json();
+
+            document.getElementById("topicTitle").innerText = topic.title;
+            document.getElementById("topicImage").src = topic.imageUrl;
+            document.getElementById("topicImage").alt = topic.title;
+
+            const sceneWrapper = document.getElementById("sceneWrapper");
+            sceneWrapper.querySelectorAll(".hotspot-button").forEach(button => button.remove());
+
+            topic.hotspots.forEach((hotspot, index) => {
+                const button = document.createElement("button");
+                button.className = "hotspot-button";
+                button.innerText = index + 1;
+
+                const x = hotspot.xPercent ?? hotspot.xpercent;
+                const y = hotspot.yPercent ?? hotspot.ypercent;
+
+                button.style.left = `${x}%`;
+                button.style.top = `${y}%`;
+
+                button.addEventListener("click", () => {
+                    showPopup(hotspot);
+                    addStudiedWord(hotspot);
+                });
+
+                sceneWrapper.appendChild(button);
+            });
+        } catch (error) {
+            document.getElementById("topicTitle").innerText = `Could not load topic: ${error.message}`;
+            console.error(error);
+        }
+    }
+
+    function showPopup(hotspot) {
+        const translation =
+            (hotspot.translations && hotspot.translations[selectedLanguage]) || hotspot.label;
+
+        document.getElementById("popupLabel").innerText = hotspot.label;
+        document.getElementById("popupTranslation").innerText =
+            `${selectedLanguage}: ${translation}`;
+
+        const popupImage = document.getElementById("popupImage");
+        if (hotspot.imageUrl) {
+            popupImage.src = hotspot.imageUrl;
+            popupImage.style.display = "block";
+        } else {
+            popupImage.style.display = "none";
+        }
+
+        const popupAudio = document.getElementById("popupAudio");
+        const audioUrl =
+            hotspot.audioUrls &&
+            (hotspot.audioUrls[selectedLanguage] || Object.values(hotspot.audioUrls)[0]);
+
+        if (audioUrl) {
+            popupAudio.src = audioUrl;
+            popupAudio.style.display = "block";
+            popupAudio.currentTime = 0;
+            popupAudio.play();
+        } else {
+            popupAudio.style.display = "none";
+            popupAudio.pause();
+            popupAudio.removeAttribute("src");
+        }
+
+        modal.style.display = "block";
+    }
+
+    function addStudiedWord(hotspot) {
+        const translation =
+            (hotspot.translations && hotspot.translations[selectedLanguage]) || hotspot.label;
+
+        const alreadyExists = studiedWords.some(word => word.label === hotspot.label);
+
+        if (!alreadyExists) {
+            studiedWords.push({
+                label: hotspot.label,
+                translation: translation
+            });
+            renderStudiedWords();
+        }
+    }
+
+    function renderStudiedWords() {
+        studiedList.innerHTML = "";
+
+        if (studiedWords.length === 0) {
+            studiedList.innerHTML = '<div class="empty-message">No words studied yet.</div>';
+            return;
+        }
+
+        studiedWords.forEach(word => {
+            const card = document.createElement("div");
+            card.className = "studied-card";
+
+            card.innerHTML = `
+                <div class="studied-word">${word.label}</div>
+                <div class="studied-translation">${selectedLanguage}: ${word.translation}</div>
+            `;
+
+            studiedList.appendChild(card);
+        });
+    }
+
+    closeModal.onclick = function () {
+        modal.style.display = "none";
+    };
+
+    window.onclick = function (event) {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    };
+
+    loadTopic();
+</script>
+
+</body>
+</html>

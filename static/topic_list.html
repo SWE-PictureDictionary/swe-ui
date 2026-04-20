@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Topics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 24px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: black;
+            font-weight: bold;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .topic-list {
+            margin-top: 24px;
+            display: grid;
+            gap: 16px;
+            max-width: 700px;
+        }
+
+        .topic-card {
+            background: #b4b4b4;
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid black;
+            cursor: pointer;
+        }
+
+        .topic-card img {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .topic-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .topic-category {
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<a class="back-link" href="/index.html">← Back to Language Selection</a>
+
+<h1 id="pageTitle">Topics</h1>
+<p id="languageLabel"></p>
+
+<div style="margin: 16px 0;">
+    <a href="/add_topic.html"
+       style="display:inline-block; padding:10px 14px; border:1px solid black; border-radius:8px; text-decoration:none; color:black; font-weight:bold;">
+        + Add a new topic
+    </a>
+</div>
+
+<div class="topic-list" id="topicList"></div>
+
+<script>
+    const selectedLanguage = localStorage.getItem("selectedLanguage") || "Spanish";
+    const topicList = document.getElementById("topicList");
+    const API_BASE = "/topics";
+    console.log("Calling API:", API_BASE);
+
+    document.getElementById("pageTitle").innerText = `${selectedLanguage} Topics`;
+    document.getElementById("languageLabel").innerText = `You are learning: ${selectedLanguage}`;
+
+    async function loadTopics() {
+        try {
+            const response = await fetch(API_BASE);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const topics = await response.json();
+
+            topicList.innerHTML = "";
+
+            topics.forEach(topic => {
+                const div = document.createElement("div");
+                div.className = "topic-card";
+                div.onclick = () => {
+                    window.location.href = `/topic.html?id=${topic.id}`;
+                };
+
+                div.innerHTML = `
+                    <div class="topic-title">${topic.title}</div>
+                    <div class="topic-category">Category: ${topic.category}</div>
+                    <img src="${topic.imageUrl}" alt="${topic.title}">
+                `;
+
+                topicList.appendChild(div);
+            });
+        } catch (error) {
+            topicList.innerHTML = "<p>Could not load topics.</p>";
+            console.error(error);
+        }
+    }
+
+    loadTopics();
+</script>
+</body>
+</html>
