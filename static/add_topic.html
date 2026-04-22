@@ -48,6 +48,15 @@
 
 <a class="back-link" href="/topic_list.html">← Back to Topics</a>
 
+
+    <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+        <button id="logoutBtn"
+                style="padding:8px 12px; border:1px solid black; border-radius:8px; background:#b4b4b4; cursor:pointer;">
+            Logout
+        </button>
+    </div>
+
+
 <h1>Add a Topic</h1>
 
 <form id="addTopicForm">
@@ -127,6 +136,14 @@
             console.error(error);
             message.textContent = "Could not create topic.";
         }
+    });
+</script>
+
+<script src="/js/app.js"></script>
+<script>
+    requireAuth();
+    window.addEventListener("DOMContentLoaded", () => {
+        attachLogoutButton();
     });
 </script>
 
