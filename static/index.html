@@ -21,7 +21,7 @@
         }
 
         .container {
-            max-width: 400px;
+            max-width: 420px;
             margin: 80px auto;
             text-align: center;
             padding: 20px;
@@ -38,6 +38,12 @@
             border-radius: 12px;
             padding: 24px;
             cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .language-card:hover {
+            background: #a5a5a5;
+            transform: translateY(-1px);
         }
 
         .language-name {
@@ -54,6 +60,10 @@
     <div class="language-grid">
         <div class="language-card" onclick="selectLanguage('Spanish')">
             <div class="language-name">Spanish</div>
+        </div>
+
+        <div class="language-card" onclick="selectLanguage('German')">
+            <div class="language-name">German</div>
         </div>
     </div>
 </div>
