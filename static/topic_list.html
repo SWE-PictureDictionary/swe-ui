@@ -88,6 +88,14 @@
 
 <a class="back-link" href="/index.html">← Back to Language Selection</a>
 
+    <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+        <button id="logoutBtn"
+                style="padding:8px 12px; border:1px solid black; border-radius:8px; background:#b4b4b4; cursor:pointer;">
+            Logout
+        </button>
+    </div>
+
+
 <h1 id="pageTitle">Topics</h1>
 <p id="languageLabel"></p>
 
@@ -97,6 +105,8 @@
     const selectedLanguage = localStorage.getItem("selectedLanguage") || "Spanish";
     const topicList = document.getElementById("topicList");
     const API_BASE = "/topics";
+
+    let currentUserInfo = null;
 
     document.getElementById("pageTitle").innerText = selectedLanguage + " Topics";
     document.getElementById("languageLabel").innerText = "You are learning: " + selectedLanguage;
@@ -121,6 +131,8 @@
             const topics = await response.json();
             const filteredTopics = topics.filter(topicMatchesLanguage);
             topicList.innerHTML = "";
+
+            currentUserInfo = await currentUser();
 
             if (filteredTopics.length === 0) {
                 topicList.innerHTML = '<p class="empty-message">No topics are available for ' + selectedLanguage + ' yet.</p>';
@@ -178,6 +190,14 @@
     }
 
     loadTopics();
+</script>
+
+<script src="../js/app.js"></script>
+<script>
+    requireAuth();
+    window.addEventListener("DOMContentLoaded", () => {
+        attachLogoutButton();
+    });
 </script>
 
 </body>
