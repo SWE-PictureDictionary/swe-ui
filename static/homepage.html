@@ -2,34 +2,116 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Picture Dictionary Home</title>
+    <title>Picture Dictionary</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            margin: 0;
+            min-height: 100vh;
             font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f7f9ff, #eef3ff);
+            color: #1f2937;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .page-card {
+            width: min(900px, 90%);
+            background: white;
+            border-radius: 26px;
+            padding: 55px 60px;
+            box-shadow: 0 25px 60px rgba(15, 23, 42, 0.14);
             text-align: center;
-            margin-top: 100px;
         }
 
-        .container {
-            max-width: 500px;
-            margin: auto;
+        h1 {
+            font-size: 52px;
+            margin: 0 0 18px;
+            font-weight: 800;
         }
 
-        button {
-            padding: 12px 20px;
-            font-size: 16px;
+        p {
+            font-size: 24px;
+            color: #64748b;
+            margin: 0 0 42px;
+        }
+
+        .language-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 22px;
+            justify-content: center;
+        }
+
+        .language-btn {
+            border: none;
+            border-radius: 18px;
+            background: #2563eb;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            padding: 28px 20px;
             cursor: pointer;
-            border-radius: 8px;
-            border: 1px solid black;
-            background: #b4b4b4;
+            transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .language-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(37, 99, 235, 0.28);
+        }
+
+        @media (max-width: 900px) {
+            .language-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            h1 {
+                font-size: 42px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .page-card {
+                padding: 38px 24px;
+            }
+
+            .language-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 36px;
+            }
+
+            p {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 <body>
-<div class="container">
+<main class="page-card">
     <h1>Picture Dictionary</h1>
-    <p>Learn vocabulary by topic with multiple words and images.</p>
-    <button onclick="window.location.href='/index.html'">Start</button>
-</div>
+    <p>Choose a language to start studying.</p>
+
+    <section class="language-grid">
+        <button class="language-btn" onclick="chooseLanguage('Spanish')">Spanish</button>
+        <button class="language-btn" onclick="chooseLanguage('German')">German</button>
+        <button class="language-btn" onclick="chooseLanguage('French')">French</button>
+        <button class="language-btn" onclick="chooseLanguage('Italian')">Italian</button>
+        <button class="language-btn" onclick="chooseLanguage('Korean')">Korean</button>
+    </section>
+</main>
+
+<script>
+    function chooseLanguage(language) {
+        window.location.href = `topic_list.html?language=${encodeURIComponent(language)}`;
+    }
+</script>
 </body>
 </html>

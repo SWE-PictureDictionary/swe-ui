@@ -2,523 +2,909 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Topic</title>
+    <title>Study Topic</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 24px;
-            background: #f4f6f8;
-            color: #0f172a;
+            font-family: Arial, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
         }
 
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            text-decoration: none;
-            color: black;
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        .header-row {
+        header {
+            background: white;
+            padding: 22px 34px;
+            box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08);
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            gap: 20px;
-            margin-bottom: 24px;
+            align-items: center;
+            gap: 18px;
         }
 
-        .page-title {
-            font-size: 72px;
-            font-weight: 700;
-            line-height: 1;
-            margin: 0 0 12px 0;
-        }
-
-        .mode-label {
-            font-size: 22px;
-            font-weight: 700;
+        .header-left h1 {
             margin: 0;
+            font-size: 30px;
         }
 
-        .mode-button {
-            border: 3px solid #111827;
-            background: white;
-            border-radius: 22px;
-            padding: 16px 26px;
-            font-size: 20px;
-            font-weight: 700;
-            cursor: pointer;
+        .header-left p {
+            margin: 5px 0 0;
+            color: #64748b;
         }
 
-        .image-area {
+        .header-actions {
             display: flex;
-            justify-content: center;
-            margin-top: 8px;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .image-wrapper {
-            position: relative;
+        .button {
+            border: none;
+            border-radius: 14px;
+            padding: 11px 16px;
+            font-weight: 800;
+            cursor: pointer;
+            text-decoration: none;
             display: inline-block;
-            width: min(100%, 1120px);
+            font-size: 14px;
+        }
+
+        .primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .secondary {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .edit-active {
+            background: #16a34a;
+            color: white;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            gap: 24px;
+            padding: 28px 34px;
+        }
+
+        .study-card {
+            background: white;
+            border-radius: 24px;
+            padding: 22px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+        }
+
+        .image-wrap {
+            position: relative;
+            width: 100%;
+            border-radius: 22px;
+            overflow: hidden;
+            background: #e2e8f0;
         }
 
         .topic-image {
-            display: block;
             width: 100%;
-            height: auto;
+            display: block;
             max-height: 72vh;
             object-fit: contain;
-            border: 3px solid #d1d5db;
-            border-radius: 32px;
-            background: white;
         }
 
         .hotspot {
             position: absolute;
-            width: 58px;
-            height: 58px;
-            border-radius: 50%;
-            border: 5px solid white;
-            background: #aeb4bf;
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            background: #2563eb;
             color: white;
-            font-size: 22px;
-            font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
-            transform: translate(-50%, -50%);
+            font-weight: 900;
+            border: 3px solid white;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
             cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+            transform: translate(-50%, -50%);
             user-select: none;
         }
 
-        .hotspot.edit-mode {
-            background: #9ca3af;
+        .hotspot:hover {
+            background: #1d4ed8;
+        }
+
+        .hotspot.editing {
+            background: #16a34a;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .panel-card {
+            background: white;
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+        }
+
+        .panel-card h2 {
+            margin: 0 0 12px;
+            font-size: 21px;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+            color: #475569;
+        }
+
+        .stat:last-child {
+            border-bottom: none;
+        }
+
+        .stack-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .stack-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+
+        .stack-item strong {
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .stack-item span {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .edit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .edit-row {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+
+        .edit-row-title {
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .edit-row-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .small-button {
+            border: none;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .popup-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            padding: 20px;
+        }
+
+        .popup {
+            width: 95%;
+            max-width: 520px;
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+        }
+
+        .popup img {
+            width: 100%;
+            max-height: 280px;
+            object-fit: contain;
+            border-radius: 18px;
+            background: #e2e8f0;
+            margin-bottom: 16px;
+        }
+
+        .popup h2 {
+            margin: 0 0 8px;
+            font-size: 28px;
+        }
+
+        .popup p {
+            margin: 0 0 16px;
+            color: #64748b;
+            font-size: 18px;
         }
 
         .modal-backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.45);
+            background: rgba(15, 23, 42, 0.55);
             display: none;
             align-items: center;
             justify-content: center;
+            z-index: 30;
             padding: 20px;
-            z-index: 1000;
         }
 
         .modal {
-            width: min(100%, 560px);
+            width: 95%;
+            max-width: 560px;
             background: white;
             border-radius: 24px;
-            padding: 28px;
-            box-sizing: border-box;
+            padding: 24px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
         }
 
         .modal h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 28px;
+            margin: 0 0 14px;
         }
 
-        .field-label {
+        label {
             display: block;
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            margin-top: 18px;
+            font-weight: 800;
+            margin-top: 14px;
+            margin-bottom: 6px;
         }
 
-        .field-input {
+        input {
             width: 100%;
             box-sizing: border-box;
-            border: 2px solid #6b7280;
-            border-radius: 14px;
-            padding: 14px 16px;
-            font-size: 18px;
-        }
-
-        .file-input {
-            width: 100%;
-            box-sizing: border-box;
-            border: 2px solid #6b7280;
-            border-radius: 14px;
-            padding: 14px 16px;
-            font-size: 18px;
-            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 13px;
+            padding: 11px 12px;
+            font-size: 15px;
         }
 
         .modal-actions {
             display: flex;
-            gap: 14px;
-            margin-top: 26px;
-            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
         }
 
-        .modal-button {
-            border: 2px solid black;
-            border-radius: 14px;
-            padding: 14px 22px;
-            background: #d9d9d9;
-            font-size: 18px;
-            font-weight: 700;
-            cursor: pointer;
+        .message {
+            margin-top: 12px;
+            color: #dc2626;
+            font-weight: 800;
         }
 
-        .modal-button.cancel {
-            background: white;
-        }
-
-        .popup-card {
-            text-align: center;
-        }
-
-        .popup-card img {
-            width: min(100%, 260px);
-            height: auto;
-            border-radius: 16px;
-            margin-bottom: 16px;
-        }
-
-        .popup-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .popup-word {
-            font-size: 22px;
-            margin-bottom: 8px;
-        }
-
-        .hidden-audio {
-            display: none;
-        }
-
-        @media (max-width: 900px) {
-            .header-row {
-                flex-direction: column;
-                align-items: flex-start;
+        @media (max-width: 980px) {
+            .layout {
+                grid-template-columns: 1fr;
             }
 
-            .page-title {
-                font-size: 56px;
+            header {
+                align-items: flex-start;
+                flex-direction: column;
             }
         }
     </style>
 </head>
 <body>
-<a class="back-link" href="/topic_list.html">← Back to Topics</a>
-
-<div class="header-row">
-    <div>
-        <h1 id="topicTitle" class="page-title">Topic</h1>
-        <p id="modeLabel" class="mode-label">Mode: Study</p>
+<header>
+    <div class="header-left">
+        <h1 id="topicTitle">Loading...</h1>
+        <p id="topicSubtitle">Study mode</p>
     </div>
-    <button id="modeButton" class="mode-button">Enter Edit Mode</button>
-</div>
 
-<div class="image-area">
-    <div class="image-wrapper" id="imageWrapper">
-        <img id="topicImage" class="topic-image" alt="Topic image">
+    <div class="header-actions">
+        <a id="backLink" class="button secondary" href="topic_list.html">Back</a>
+        <button id="editModeButton" class="button secondary" type="button">Edit Mode</button>
+    </div>
+</header>
+
+<main class="layout">
+    <section class="study-card">
+        <div id="imageWrap" class="image-wrap">
+            <img id="topicImage" class="topic-image" alt="Topic image">
+        </div>
+    </section>
+
+    <aside class="side-panel">
+        <section class="panel-card">
+            <h2>Progress</h2>
+            <div class="stat">
+                <span>Total Clicks</span>
+                <strong id="totalClicks">0</strong>
+            </div>
+            <div class="stat">
+                <span>Unique Studied</span>
+                <strong id="uniqueStudied">0</strong>
+            </div>
+            <button id="undoButton" class="button secondary" type="button" style="width:100%; margin-top:14px;">
+                Undo Last Click
+            </button>
+        </section>
+
+        <section class="panel-card">
+            <h2>Study Stack</h2>
+            <div id="studyStack" class="stack-list"></div>
+        </section>
+
+        <section id="editPanel" class="panel-card" style="display:none;">
+            <h2>Edit Hotspots</h2>
+            <p style="color:#64748b; margin-top:0;">Click the topic image to add a hotspot.</p>
+            <div id="editList" class="edit-list"></div>
+        </section>
+    </aside>
+</main>
+
+<div id="popupBackdrop" class="popup-backdrop">
+    <div class="popup">
+        <img id="popupImage" alt="Hotspot image" style="display:none;">
+        <h2 id="popupLabel"></h2>
+        <p id="popupTranslation"></p>
+        <div class="modal-actions">
+            <button id="popupAudioButton" class="button primary" type="button">Play Audio</button>
+            <button id="popupCloseButton" class="button secondary" type="button">Close</button>
+        </div>
     </div>
 </div>
 
 <div id="hotspotModalBackdrop" class="modal-backdrop">
     <div class="modal">
-        <h2>New Hotspot</h2>
+        <h2 id="hotspotModalTitle">Add Hotspot</h2>
 
-        <label class="field-label" for="hotspotLabel">Label</label>
-        <input id="hotspotLabel" class="field-input" type="text">
+        <label for="hotspotLabel">Label</label>
+        <input id="hotspotLabel" type="text" placeholder="Example: Chair">
 
-        <label class="field-label" for="hotspotWord">Word in Selected Language</label>
-        <input id="hotspotWord" class="field-input" type="text">
+        <label id="translationLabel" for="hotspotTranslation">Translation</label>
+        <input id="hotspotTranslation" type="text" placeholder="Translation">
 
-        <label class="field-label" for="hotspotImageFile">Hotspot Image</label>
-        <input id="hotspotImageFile" class="file-input" type="file" accept="image/*">
+        <label for="hotspotImageFile">Hotspot Popup Image</label>
+        <input id="hotspotImageFile" type="file" accept="image/*">
 
-        <label class="field-label" for="hotspotAudioFile">Hotspot Audio</label>
-        <input id="hotspotAudioFile" class="file-input" type="file" accept="audio/*">
+        <label for="hotspotAudioFile">Hotspot Audio</label>
+        <input id="hotspotAudioFile" type="file" accept="audio/*">
+
+        <div id="modalMessage" class="message"></div>
 
         <div class="modal-actions">
-            <button id="saveHotspotButton" class="modal-button">Save Hotspot</button>
-            <button id="cancelHotspotButton" class="modal-button cancel">Cancel</button>
+            <button id="cancelHotspotButton" class="button secondary" type="button">Cancel</button>
+            <button id="saveHotspotButton" class="button primary" type="button">Save</button>
         </div>
     </div>
 </div>
 
-<div id="popupBackdrop" class="modal-backdrop">
-    <div class="modal popup-card">
-        <img id="popupImage" alt="Hotspot image">
-        <div id="popupTitle" class="popup-title"></div>
-        <div id="popupWord" class="popup-word"></div>
-        <button id="closePopupButton" class="modal-button">Close</button>
-        <audio id="popupAudio" class="hidden-audio"></audio>
-    </div>
-</div>
-
 <script>
-    const selectedLanguage = localStorage.getItem("selectedLanguage") || "Spanish";
     const params = new URLSearchParams(window.location.search);
-    const topicId = params.get("id");
+    const topicId = params.get("id") || params.get("topicId");
+    const selectedLanguage = params.get("language") || localStorage.getItem("selectedLanguage") || "Spanish";
+
+    localStorage.setItem("selectedLanguage", selectedLanguage);
 
     const topicTitle = document.getElementById("topicTitle");
-    const modeLabel = document.getElementById("modeLabel");
-    const modeButton = document.getElementById("modeButton");
-    const imageWrapper = document.getElementById("imageWrapper");
+    const topicSubtitle = document.getElementById("topicSubtitle");
+    const backLink = document.getElementById("backLink");
+    const editModeButton = document.getElementById("editModeButton");
     const topicImage = document.getElementById("topicImage");
+    const imageWrap = document.getElementById("imageWrap");
+    const editPanel = document.getElementById("editPanel");
+    const editList = document.getElementById("editList");
+    const totalClicks = document.getElementById("totalClicks");
+    const uniqueStudied = document.getElementById("uniqueStudied");
+    const studyStack = document.getElementById("studyStack");
+    const undoButton = document.getElementById("undoButton");
+
+    const popupBackdrop = document.getElementById("popupBackdrop");
+    const popupImage = document.getElementById("popupImage");
+    const popupLabel = document.getElementById("popupLabel");
+    const popupTranslation = document.getElementById("popupTranslation");
+    const popupAudioButton = document.getElementById("popupAudioButton");
+    const popupCloseButton = document.getElementById("popupCloseButton");
 
     const hotspotModalBackdrop = document.getElementById("hotspotModalBackdrop");
-    const popupBackdrop = document.getElementById("popupBackdrop");
+    const hotspotModalTitle = document.getElementById("hotspotModalTitle");
+    const hotspotLabel = document.getElementById("hotspotLabel");
+    const hotspotTranslation = document.getElementById("hotspotTranslation");
+    const hotspotImageFile = document.getElementById("hotspotImageFile");
+    const hotspotAudioFile = document.getElementById("hotspotAudioFile");
+    const translationLabel = document.getElementById("translationLabel");
+    const modalMessage = document.getElementById("modalMessage");
+    const cancelHotspotButton = document.getElementById("cancelHotspotButton");
+    const saveHotspotButton = document.getElementById("saveHotspotButton");
 
     let topic = null;
     let editMode = false;
-    let pendingXPercent = null;
-    let pendingYPercent = null;
+    let modalMode = "add";
+    let modalX = 50;
+    let modalY = 50;
+    let editingIndex = -1;
+    let activeAudio = null;
+    let currentPopupAudioUrl = "";
 
-    async function loadTopic() {
-        try {
-            const response = await fetch("/topics/" + topicId);
-            if (!response.ok) {
-                throw new Error("HTTP error " + response.status);
-            }
+    const stackStorageKey = `studyStack:${topicId}:${selectedLanguage}`;
 
-            topic = await response.json();
-            topicTitle.innerText = topic.title;
-            topicImage.src = topic.imageUrl;
-            renderHotspots();
-        } catch (error) {
-            console.error(error);
-            alert("Could not load topic.");
-        }
+    backLink.href = `topic_list.html?language=${encodeURIComponent(selectedLanguage)}`;
+    translationLabel.textContent = `${selectedLanguage} Translation`;
+
+    let clickedStack = loadStack();
+
+    if (!topicId) {
+        topicTitle.textContent = "Missing topic id";
+    } else {
+        loadTopic();
     }
 
-    function setMode(isEditMode) {
-        editMode = isEditMode;
-        modeLabel.innerText = editMode ? "Mode: Edit" : "Mode: Study";
-        modeButton.innerText = editMode ? "Leave Edit Mode" : "Enter Edit Mode";
-        renderHotspots();
-    }
-
-    function clearHotspotElements() {
-        const oldHotspots = imageWrapper.querySelectorAll(".hotspot");
-        oldHotspots.forEach(function (element) {
-            element.remove();
-        });
-    }
-
-    function renderHotspots() {
-        clearHotspotElements();
-
-        if (!topic || !topic.hotspots) {
-            return;
-        }
-
-        topic.hotspots.forEach(function (hotspot, index) {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "hotspot" + (editMode ? " edit-mode" : "");
-            button.style.left = hotspot.xPercent + "%";
-            button.style.top = hotspot.yPercent + "%";
-            button.innerText = String(index + 1);
-
-            button.addEventListener("click", function (event) {
-                event.stopPropagation();
-
-                if (editMode) {
-                    deleteHotspot(index);
-                    return;
-                }
-
-                showPopup(hotspot);
-            });
-
-            imageWrapper.appendChild(button);
-        });
-    }
-
-    function openHotspotModal(xPercent, yPercent) {
-        pendingXPercent = xPercent;
-        pendingYPercent = yPercent;
-        document.getElementById("hotspotLabel").value = "";
-        document.getElementById("hotspotWord").value = "";
-        document.getElementById("hotspotImageFile").value = "";
-        document.getElementById("hotspotAudioFile").value = "";
-        hotspotModalBackdrop.style.display = "flex";
-    }
-
-    function closeHotspotModal() {
-        hotspotModalBackdrop.style.display = "none";
-        pendingXPercent = null;
-        pendingYPercent = null;
-    }
-
-    function showPopup(hotspot) {
-        const popupImage = document.getElementById("popupImage");
-        const popupTitle = document.getElementById("popupTitle");
-        const popupWord = document.getElementById("popupWord");
-
-        popupImage.src = hotspot.imageUrl || "";
-        popupImage.style.display = hotspot.imageUrl ? "inline-block" : "none";
-        popupTitle.innerText = hotspot.label || "";
-        popupWord.innerText = hotspot.translations && hotspot.translations[selectedLanguage]
-            ? hotspot.translations[selectedLanguage]
-            : "";
-
-        popupBackdrop.style.display = "flex";
-        playAudioImmediately(hotspot.audioUrls ? hotspot.audioUrls[selectedLanguage] : null);
-    }
-
-    function closePopup() {
-        popupBackdrop.style.display = "none";
-        const popupAudio = document.getElementById("popupAudio");
-        popupAudio.pause();
-        popupAudio.removeAttribute("src");
-        popupAudio.load();
-    }
-
-    async function playAudioImmediately(audioUrl) {
-        const popupAudio = document.getElementById("popupAudio");
-        popupAudio.pause();
-        popupAudio.removeAttribute("src");
-        popupAudio.load();
-
-        if (!audioUrl) {
-            return;
-        }
-
-        popupAudio.src = audioUrl;
-        popupAudio.load();
-
-        try {
-            await popupAudio.play();
-        } catch (error) {
-            console.warn("Audio autoplay was blocked.", error);
-        }
-    }
-
-    async function uploadFile(url, file) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch(url, {
-            method: "POST",
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error("Upload failed with status " + response.status);
-        }
-
-        return response.json();
-    }
-
-    async function saveHotspot() {
-        const label = document.getElementById("hotspotLabel").value.trim();
-        const translatedWord = document.getElementById("hotspotWord").value.trim();
-        const imageFile = document.getElementById("hotspotImageFile").files[0];
-        const audioFile = document.getElementById("hotspotAudioFile").files[0];
-
-        if (!label || !translatedWord || !imageFile || !audioFile || pendingXPercent === null || pendingYPercent === null) {
-            alert("Please fill in every field before saving the hotspot.");
-            return;
-        }
-
-        try {
-            const imageResponse = await uploadFile("/topics/" + topicId + "/images", imageFile);
-            const audioResponse = await uploadFile("/topics/" + topicId + "/audio", audioFile);
-
-            const newHotspot = {
-                label: label,
-                imageUrl: imageResponse.path,
-                xPercent: pendingXPercent,
-                yPercent: pendingYPercent,
-                translations: {
-                    [selectedLanguage]: translatedWord
-                },
-                audioUrls: {
-                    [selectedLanguage]: audioResponse.path
-                }
-            };
-
-            const response = await fetch("/topics/" + topicId + "/hotspots", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(newHotspot)
-            });
-
-            if (!response.ok) {
-                throw new Error("Save failed with status " + response.status);
-            }
-
-            topic = await response.json();
-            closeHotspotModal();
-            renderHotspots();
-        } catch (error) {
-            console.error(error);
-            alert("Could not save hotspot.");
-        }
-    }
-
-    async function deleteHotspot(index) {
-        const confirmed = window.confirm("Delete this hotspot?");
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            const response = await fetch("/topics/" + topicId + "/hotspots/" + index, {
-                method: "DELETE"
-            });
-
-            if (!response.ok) {
-                throw new Error("Delete failed with status " + response.status);
-            }
-
-            topic = await response.json();
-            renderHotspots();
-        } catch (error) {
-            console.error(error);
-            alert("Could not delete hotspot.");
-        }
-    }
-
-    topicImage.addEventListener("click", function (event) {
-        if (!editMode) {
-            return;
-        }
-
-        const rect = topicImage.getBoundingClientRect();
-        const xPercent = ((event.clientX - rect.left) / rect.width) * 100;
-        const yPercent = ((event.clientY - rect.top) / rect.height) * 100;
-        openHotspotModal(Number(xPercent.toFixed(2)), Number(yPercent.toFixed(2)));
+    editModeButton.addEventListener("click", () => {
+        editMode = !editMode;
+        render();
     });
 
-    modeButton.addEventListener("click", function () {
-        setMode(!editMode);
-    });
-
-    document.getElementById("saveHotspotButton").addEventListener("click", saveHotspot);
-    document.getElementById("cancelHotspotButton").addEventListener("click", closeHotspotModal);
-    document.getElementById("closePopupButton").addEventListener("click", closePopup);
-
-    hotspotModalBackdrop.addEventListener("click", function (event) {
-        if (event.target === hotspotModalBackdrop) {
-            closeHotspotModal();
+    imageWrap.addEventListener("click", event => {
+        if (!editMode || event.target.classList.contains("hotspot")) {
+            return;
         }
+
+        const rect = imageWrap.getBoundingClientRect();
+        modalX = ((event.clientX - rect.left) / rect.width) * 100;
+        modalY = ((event.clientY - rect.top) / rect.height) * 100;
+
+        openAddHotspotModal(modalX, modalY);
     });
 
-    popupBackdrop.addEventListener("click", function (event) {
+    undoButton.addEventListener("click", () => {
+        clickedStack.pop();
+        saveStack();
+        renderProgress();
+    });
+
+    popupCloseButton.addEventListener("click", closePopup);
+
+    popupBackdrop.addEventListener("click", event => {
         if (event.target === popupBackdrop) {
             closePopup();
         }
     });
 
-    loadTopic();
+    popupAudioButton.addEventListener("click", () => {
+        playAudio(currentPopupAudioUrl);
+    });
+
+    cancelHotspotButton.addEventListener("click", closeHotspotModal);
+    saveHotspotButton.addEventListener("click", saveHotspot);
+
+    async function loadTopic() {
+        try {
+            const response = await fetch(`/topics/${encodeURIComponent(topicId)}`);
+
+            if (!response.ok) {
+                throw new Error("Could not load topic.");
+            }
+
+            topic = await response.json();
+            render();
+        } catch (error) {
+            topicTitle.textContent = "Error";
+            topicSubtitle.textContent = error.message;
+        }
+    }
+
+    function render() {
+        if (!topic) {
+            return;
+        }
+
+        topicTitle.textContent = topic.title;
+        topicSubtitle.textContent = `${selectedLanguage} study mode`;
+        topicImage.src = topic.imageUrl || "";
+        topicImage.alt = topic.title || "Topic image";
+
+        editModeButton.textContent = editMode ? "Done Editing" : "Edit Mode";
+        editModeButton.className = editMode ? "button edit-active" : "button secondary";
+        editPanel.style.display = editMode ? "block" : "none";
+
+        renderHotspots();
+        renderProgress();
+        renderEditList();
+    }
+
+    function renderHotspots() {
+        imageWrap.querySelectorAll(".hotspot").forEach(marker => marker.remove());
+
+        const hotspots = topic.hotspots || [];
+
+        hotspots.forEach((hotspot, index) => {
+            const marker = document.createElement("div");
+            marker.className = editMode ? "hotspot editing" : "hotspot";
+            marker.textContent = String(index + 1);
+
+            const x = Number(hotspot.xPercent ?? hotspot.xpercent ?? 50);
+            const y = Number(hotspot.yPercent ?? hotspot.ypercent ?? 50);
+
+            marker.style.left = `${x}%`;
+            marker.style.top = `${y}%`;
+
+            marker.addEventListener("click", event => {
+                event.stopPropagation();
+
+                if (editMode) {
+                    openEditHotspotModal(index);
+                } else {
+                    handleStudyClick(hotspot);
+                }
+            });
+
+            imageWrap.appendChild(marker);
+        });
+    }
+
+    function handleStudyClick(hotspot) {
+        const label = hotspot.label || "Hotspot";
+        const translation = getLanguageValue(hotspot.translations) || "";
+        const audioUrl = getLanguageValue(hotspot.audioUrls) || "";
+
+        clickedStack.push({
+            label: label,
+            translation: translation,
+            time: new Date().toLocaleTimeString()
+        });
+
+        saveStack();
+        renderProgress();
+
+        openPopup(hotspot);
+        playAudio(audioUrl);
+    }
+
+    function renderProgress() {
+        totalClicks.textContent = String(clickedStack.length);
+
+        const uniqueLabels = new Set(clickedStack.map(item => item.label));
+        uniqueStudied.textContent = String(uniqueLabels.size);
+
+        if (!clickedStack.length) {
+            studyStack.innerHTML = `<p style="color:#64748b;">No hotspots clicked yet.</p>`;
+            return;
+        }
+
+        studyStack.innerHTML = "";
+
+        [...clickedStack].reverse().forEach(item => {
+            const div = document.createElement("div");
+            div.className = "stack-item";
+            div.innerHTML = `
+                <strong>${escapeHtml(item.label)}</strong>
+                <span>${escapeHtml(item.translation || selectedLanguage)} • ${escapeHtml(item.time)}</span>
+            `;
+            studyStack.appendChild(div);
+        });
+    }
+
+    function renderEditList() {
+        const hotspots = topic.hotspots || [];
+
+        if (!hotspots.length) {
+            editList.innerHTML = `<p style="color:#64748b;">No hotspots yet. Click the image to add one.</p>`;
+            return;
+        }
+
+        editList.innerHTML = "";
+
+        hotspots.forEach((hotspot, index) => {
+            const row = document.createElement("div");
+            row.className = "edit-row";
+
+            row.innerHTML = `
+                <div class="edit-row-title">${index + 1}. ${escapeHtml(hotspot.label)}</div>
+                <div class="edit-row-actions">
+                    <button class="small-button primary" type="button">Edit</button>
+                    <button class="small-button danger" type="button">Delete</button>
+                </div>
+            `;
+
+            const buttons = row.querySelectorAll("button");
+
+            buttons[0].addEventListener("click", () => openEditHotspotModal(index));
+            buttons[1].addEventListener("click", () => deleteHotspot(index));
+
+            editList.appendChild(row);
+        });
+    }
+
+    function openPopup(hotspot) {
+        const label = hotspot.label || "Hotspot";
+        const translation = getLanguageValue(hotspot.translations) || "";
+        const imageUrl = hotspot.imageUrl || "";
+        const audioUrl = getLanguageValue(hotspot.audioUrls) || "";
+
+        popupLabel.textContent = label;
+        popupTranslation.textContent = translation ? `${selectedLanguage}: ${translation}` : selectedLanguage;
+
+        if (imageUrl) {
+            popupImage.src = imageUrl;
+            popupImage.style.display = "block";
+        } else {
+            popupImage.removeAttribute("src");
+            popupImage.style.display = "none";
+        }
+
+        currentPopupAudioUrl = audioUrl;
+        popupAudioButton.style.display = audioUrl ? "inline-block" : "none";
+
+        popupBackdrop.style.display = "flex";
+    }
+
+    function closePopup() {
+        popupBackdrop.style.display = "none";
+    }
+
+    function openAddHotspotModal(x, y) {
+        modalMode = "add";
+        modalX = x;
+        modalY = y;
+        editingIndex = -1;
+
+        hotspotModalTitle.textContent = "Add Hotspot";
+        hotspotLabel.value = "";
+        hotspotTranslation.value = "";
+        hotspotImageFile.value = "";
+        hotspotAudioFile.value = "";
+        modalMessage.textContent = "";
+
+        hotspotModalBackdrop.style.display = "flex";
+    }
+
+    function openEditHotspotModal(index) {
+        const hotspot = topic.hotspots[index];
+
+        modalMode = "edit";
+        editingIndex = index;
+        modalX = Number(hotspot.xPercent ?? hotspot.xpercent ?? 50);
+        modalY = Number(hotspot.yPercent ?? hotspot.ypercent ?? 50);
+
+        hotspotModalTitle.textContent = "Edit Hotspot";
+        hotspotLabel.value = hotspot.label || "";
+        hotspotTranslation.value = getLanguageValue(hotspot.translations) || "";
+        hotspotImageFile.value = "";
+        hotspotAudioFile.value = "";
+        modalMessage.textContent = "";
+
+        hotspotModalBackdrop.style.display = "flex";
+    }
+
+    function closeHotspotModal() {
+        hotspotModalBackdrop.style.display = "none";
+    }
+
+    async function saveHotspot() {
+        modalMessage.textContent = "";
+
+        const label = hotspotLabel.value.trim();
+        const translation = hotspotTranslation.value.trim();
+
+        if (!label) {
+            modalMessage.textContent = "Label is required.";
+            return;
+        }
+
+        try {
+            let existingHotspot = null;
+
+            if (modalMode === "edit") {
+                existingHotspot = topic.hotspots[editingIndex];
+            }
+
+            let imageUrl = existingHotspot?.imageUrl || "";
+            let audioUrl = getLanguageValue(existingHotspot?.audioUrls) || "";
+
+            if (hotspotImageFile.files[0]) {
+                imageUrl = await uploadFile("images", hotspotImageFile.files[0]);
+            }
+
+            if (hotspotAudioFile.files[0]) {
+                audioUrl = await uploadFile("audio", hotspotAudioFile.files[0]);
+            }
+
+            const translations = {
+                ...(existingHotspot?.translations || {}),
+                [selectedLanguage]: translation || label
+            };
+
+            const audioUrls = {
+                ...(existingHotspot?.audioUrls || {})
+            };
+
+            if (audioUrl) {
+                audioUrls[selectedLanguage] = audioUrl;
+            }
+
+            const payload = {
+                label: label,
+                imageUrl: imageUrl,
+                xPercent: modalX,
+                yPercent: modalY,
+                translations: translations,
+                audioUrls: audioUrls
+            };
+
+            let response;
+
+            if (modalMode === "add") {
+                response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                const oldLabel = topic.hotspots[editingIndex].label;
+
+                response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots/${encodeURIComponent(oldLabel)}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || "Could not save hotspot.");
+            }
+
+            closeHotspotModal();
+            await loadTopic();
+        } catch (error) {
+            modalMessage.textContent = error.message;
+        }
+    }
+
+    async function deleteHotspot(index) {
+        const confirmed = confirm("Delete this hotspot?");
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots/${index}`, {
+                method: "DELETE"
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || "Could not delete hotspot.");
+            }
+
+            await loadTopic();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function uploadFile(type, file) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(`/topics/${encodeURIComponent(topicId)}/${type}`, {
+            method: "POST",
+            body: formData
+        });
+
+        const text = await response.text();
+
+        if (!response.ok) {
+            throw new Error(text || `Could not upload ${type}.`);
+        }
+
+        return cleanReturnedPath(text);
+    }
+
+    function cleanReturnedPath(value) {
+        let cleaned = String(value || "").trim();
+
+        if (cleaned.startsWith("{")) {
+            try {
+                const json = JSON.parse(cleaned);
+                return json.url || json.path || json.imageUrl || json.audioUrl || cleaned;
+            } catch {
+                return cleaned;
+            }
+        }
+
+        if (
+            (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+            (cleaned.startsWith("'") && cleaned.endsWith("'"))
+        ) {
+            cleaned = cleaned.slice(1, -1);
+        }
+
+        return cleaned;
+    }
+
+    function playAudio(audioUrl) {
+        if (!audioUrl) {
+            return;
+        }
+
+        try {
+            if (activeAudio) {
+                activeAudio.pause();
+                activeAudio.currentTime = 0;
+            }
+
+            activeAudio = new Audio(audioUrl);
+            activeAudio.play().catch(error => {
+                console.warn("Audio could not autoplay:", error);
+            });
+        } catch (error) {
+            console.warn("Audio error:", error);
+        }
+    }
+
+    function getLanguageValue(object) {
+        if (!object) {
+            return "";
+        }
+
+        if (object[selectedLanguage]) {
+            return object[selectedLanguage];
+        }
+
+        const key = Object.keys(object).find(item => item.toLowerCase() === selectedLanguage.toLowerCase());
+
+        return key ? object[key] : "";
+    }
+
+    function loadStack() {
+        try {
+            return JSON.parse(localStorage.getItem(stackStorageKey)) || [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveStack() {
+        localStorage.setItem(stackStorageKey, JSON.stringify(clickedStack));
+    }
+
+    function escapeHtml(value) {
+        return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
 </script>
 </body>
 </html>

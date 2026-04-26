@@ -5,175 +5,309 @@
     <title>Topics</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            padding: 24px;
             margin: 0;
-            background: #f4f6f8;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
             color: #222;
         }
 
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            text-decoration: none;
-            color: black;
-            font-weight: bold;
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 24px;
         }
 
-        h1 {
-            margin-bottom: 8px;
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .top-left h1 {
+            margin: 0;
+            font-size: 34px;
+        }
+
+        .top-left p {
+            margin: 8px 0 0;
+            color: #555;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .action-button {
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            padding: 11px 16px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #222;
+            background: white;
+            border: 1px solid #d0d0d0;
+        }
+
+        .action-button.primary {
+            background: #222;
+            color: white;
+            border-color: #222;
         }
 
         .topic-list {
-            margin-top: 24px;
             display: grid;
-            gap: 16px;
-            max-width: 700px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 22px;
         }
 
         .topic-card {
-            background: #b4b4b4;
-            padding: 16px;
-            border-radius: 10px;
-            border: 1px solid black;
-            cursor: pointer;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
         }
 
         .topic-card img {
             width: 100%;
-            max-width: 300px;
-            border-radius: 8px;
-            margin-top: 10px;
-            display: block;
+            height: 180px;
+            object-fit: cover;
+            background: #ddd;
         }
 
-        .topic-title {
-            font-size: 20px;
-            font-weight: bold;
+        .topic-content {
+            padding: 18px;
         }
 
-        .topic-category {
-            margin-top: 6px;
+        .topic-content h2 {
+            margin: 0 0 8px;
+            font-size: 22px;
+        }
+
+        .topic-content p {
+            margin: 0 0 16px;
+            color: #555;
         }
 
         .topic-actions {
-            margin-top: 12px;
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .delete-button {
-            padding: 10px 14px;
-            border: 1px solid black;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            text-decoration: none;
-            color: black;
+        .open-button {
             display: inline-block;
-            background: #d9d9d9;
+            text-decoration: none;
+            background: #222;
+            color: white;
+            padding: 10px 14px;
+            border-radius: 9px;
+            font-weight: bold;
         }
 
         .delete-button {
-            background: #e7b3b3;
+            border: none;
+            cursor: pointer;
+            background: #e6b0b0;
+            color: #222;
+            padding: 10px 14px;
+            border-radius: 9px;
+            font-weight: bold;
         }
 
         .empty-message {
-            margin-top: 24px;
-            font-size: 18px;
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            color: #555;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+        }
+
+        @media (max-width: 700px) {
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .top-actions {
+                justify-content: flex-start;
+            }
         }
     </style>
 </head>
 <body>
 
-<a class="back-link" href="/index.html">← Back to Language Selection</a>
+<div class="page">
+    <div class="top-bar">
+        <div class="top-left">
+            <h1 id="pageTitle">Topics</h1>
+            <p id="languageNotice"></p>
+        </div>
 
-<h1 id="pageTitle">Topics</h1>
-<p id="languageLabel"></p>
+        <div class="top-actions">
+            <a class="action-button" href="/index.html">Change Language</a>
+            <a class="action-button primary" href="/add_topic.html">Create Topic</a>
+        </div>
+    </div>
 
-<div class="topic-list" id="topicList"></div>
+    <div id="topicList" class="topic-list"></div>
+</div>
 
 <script>
-    const selectedLanguage = localStorage.getItem("selectedLanguage") || "Spanish";
-    const topicList = document.getElementById("topicList");
     const API_BASE = "/topics";
+    const selectedLanguage = localStorage.getItem("selectedLanguage") || "Spanish";
 
-    document.getElementById("pageTitle").innerText = selectedLanguage + " Topics";
-    document.getElementById("languageLabel").innerText = "You are learning: " + selectedLanguage;
+    const topicList = document.getElementById("topicList");
+    const pageTitle = document.getElementById("pageTitle");
+    const languageNotice = document.getElementById("languageNotice");
+
+    pageTitle.innerText = selectedLanguage + " Topics";
+    languageNotice.innerText = "Choose a topic to start learning " + selectedLanguage + ".";
+
+    function getTopicLanguageAssignments() {
+        try {
+            return JSON.parse(localStorage.getItem("topicLanguageAssignments")) || {};
+        } catch (error) {
+            return {};
+        }
+    }
 
     function topicMatchesLanguage(topic) {
-        if (!topic.hotspots || topic.hotspots.length === 0) {
+        const assignments = getTopicLanguageAssignments();
+
+        if (assignments[topic.id] && assignments[topic.id].includes(selectedLanguage)) {
             return true;
         }
 
-        return topic.hotspots.some(function (hotspot) {
-            return hotspot.translations && hotspot.translations[selectedLanguage];
+        if (!topic.hotspots || topic.hotspots.length === 0) {
+            return false;
+        }
+
+        return topic.hotspots.some(function(hotspot) {
+            const translations = hotspot.translations || {};
+            const audioUrls = hotspot.audioUrls || {};
+
+            return translations[selectedLanguage] || audioUrls[selectedLanguage];
         });
+    }
+
+    function renderTopics(topics) {
+        topicList.innerHTML = "";
+
+        const filteredTopics = topics.filter(topicMatchesLanguage);
+
+        if (filteredTopics.length === 0) {
+            topicList.innerHTML = `
+                <div class="empty-message">
+                    No topics found for ${selectedLanguage}. Use Create Topic to add one.
+                </div>
+            `;
+            return;
+        }
+
+        filteredTopics.forEach(function(topic) {
+            const card = document.createElement("div");
+            card.className = "topic-card";
+
+            const image = document.createElement("img");
+            image.src = topic.imageUrl || "";
+            image.alt = topic.title || "Topic image";
+
+            const content = document.createElement("div");
+            content.className = "topic-content";
+
+            const title = document.createElement("h2");
+            title.innerText = topic.title || "Untitled Topic";
+
+            const category = document.createElement("p");
+            category.innerText = topic.category || "Topic";
+
+            const actions = document.createElement("div");
+            actions.className = "topic-actions";
+
+            const openLink = document.createElement("a");
+            openLink.className = "open-button";
+            openLink.href = "/topic.html?id=" + encodeURIComponent(topic.id);
+            openLink.innerText = "Open";
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "delete-button";
+            deleteButton.type = "button";
+            deleteButton.innerText = "Delete Topic";
+
+            deleteButton.addEventListener("click", function() {
+                deleteTopic(topic.id, topic.title || "this topic");
+            });
+
+            actions.appendChild(openLink);
+            actions.appendChild(deleteButton);
+
+            content.appendChild(title);
+            content.appendChild(category);
+            content.appendChild(actions);
+
+            card.appendChild(image);
+            card.appendChild(content);
+
+            topicList.appendChild(card);
+        });
+    }
+
+    async function deleteTopic(topicId, topicTitle) {
+        const confirmed = window.confirm("Delete " + topicTitle + "?");
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const response = await fetch(API_BASE + "/" + encodeURIComponent(topicId), {
+                method: "DELETE"
+            });
+
+            if (!response.ok && response.status !== 204) {
+                throw new Error("Delete failed with status " + response.status);
+            }
+
+            const assignments = getTopicLanguageAssignments();
+
+            if (assignments[topicId]) {
+                delete assignments[topicId];
+                localStorage.setItem("topicLanguageAssignments", JSON.stringify(assignments));
+            }
+
+            await loadTopics();
+        } catch (error) {
+            console.error(error);
+            alert("Could not delete topic.");
+        }
     }
 
     async function loadTopics() {
         try {
             const response = await fetch(API_BASE);
+
             if (!response.ok) {
                 throw new Error("HTTP error " + response.status);
             }
 
             const topics = await response.json();
-            const filteredTopics = topics.filter(topicMatchesLanguage);
-            topicList.innerHTML = "";
-
-            if (filteredTopics.length === 0) {
-                topicList.innerHTML = '<p class="empty-message">No topics are available for ' + selectedLanguage + ' yet.</p>';
-                return;
-            }
-
-            filteredTopics.forEach(function(topic) {
-                const div = document.createElement("div");
-                div.className = "topic-card";
-
-                div.addEventListener("click", function() {
-                    window.location.href = "/topic.html?id=" + topic.id;
-                });
-
-                div.innerHTML =
-                    '<div class="topic-title">' + topic.title + '</div>' +
-                    '<div class="topic-category">Category: ' + topic.category + '</div>' +
-                    '<img src="' + topic.imageUrl + '" alt="' + topic.title + '">' +
-                    '<div class="topic-actions">' +
-                    '<button class="delete-button">Delete Topic</button>' +
-                    '</div>';
-
-                const deleteButton = div.querySelector(".delete-button");
-
-                deleteButton.addEventListener("click", async function(event) {
-                    event.stopPropagation();
-
-                    const confirmed = window.confirm('Delete topic "' + topic.title + '"?');
-                    if (!confirmed) {
-                        return;
-                    }
-
-                    try {
-                        const deleteResponse = await fetch(API_BASE + "/" + topic.id, {
-                            method: "DELETE"
-                        });
-
-                        if (!deleteResponse.ok) {
-                            throw new Error("HTTP error " + deleteResponse.status);
-                        }
-
-                        await loadTopics();
-                    } catch (error) {
-                        console.error(error);
-                        alert("Could not delete topic.");
-                    }
-                });
-
-                topicList.appendChild(div);
-            });
+            renderTopics(topics);
         } catch (error) {
-            topicList.innerHTML = "<p>Could not load topics.</p>";
             console.error(error);
+            topicList.innerHTML = `
+                <div class="empty-message">
+                    Could not load topics. Make sure the backend is running.
+                </div>
+            `;
         }
     }
 
