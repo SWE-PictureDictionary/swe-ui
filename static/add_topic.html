@@ -113,6 +113,8 @@
 </main>
 
 <script>
+    const TOPIC_UNDO_KEY = "topicUndoAction";
+
     const params = new URLSearchParams(window.location.search);
     const selectedLanguage = params.get("language") || localStorage.getItem("selectedLanguage") || "Spanish";
 
@@ -178,7 +180,16 @@
                 throw new Error(errorText || "Could not create topic.");
             }
 
-            window.location.href = `topic.html?id=${encodeURIComponent(id)}&language=${encodeURIComponent(selectedLanguage)}`;
+            assignTopicToLanguage(id, selectedLanguage);
+
+            saveTopicUndoAction({
+                type: "create",
+                topic: payload,
+                language: selectedLanguage,
+                assignments: [selectedLanguage]
+            });
+
+            window.location.href = `topic_list.html?language=${encodeURIComponent(selectedLanguage)}`;
         } catch (error) {
             message.textContent = error.message;
         }
@@ -201,6 +212,30 @@
 
             reader.readAsDataURL(file);
         });
+    }
+
+    function getTopicLanguageAssignments() {
+        try {
+            return JSON.parse(localStorage.getItem("topicLanguageAssignments")) || {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function saveTopicLanguageAssignments(assignments) {
+        localStorage.setItem("topicLanguageAssignments", JSON.stringify(assignments));
+    }
+
+    function assignTopicToLanguage(topicId, language) {
+        const assignments = getTopicLanguageAssignments();
+        const languages = new Set(assignments[topicId] || []);
+        languages.add(language);
+        assignments[topicId] = Array.from(languages);
+        saveTopicLanguageAssignments(assignments);
+    }
+
+    function saveTopicUndoAction(action) {
+        localStorage.setItem(TOPIC_UNDO_KEY, JSON.stringify(action));
     }
 </script>
 </body>

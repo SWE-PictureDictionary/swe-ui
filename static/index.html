@@ -82,7 +82,7 @@
         button.addEventListener("click", function() {
             const selectedLanguage = button.dataset.language;
             localStorage.setItem("selectedLanguage", selectedLanguage);
-            window.location.href = "/topic_list.html";
+            window.location.href = "/topic_list.html?language=" + encodeURIComponent(selectedLanguage);
         });
     });
 </script>

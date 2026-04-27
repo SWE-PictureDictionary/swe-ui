@@ -154,7 +154,8 @@
 
         <div class="top-actions">
             <a class="action-button" href="/index.html">Change Language</a>
-            <a class="action-button primary" href="/add_topic.html">Create Topic</a>
+            <button id="undoTopicButton" class="action-button" type="button">Undo Last Topic Change</button>
+            <a id="createTopicLink" class="action-button primary" href="/add_topic.html">Create Topic</a>
         </div>
     </div>
 
@@ -163,14 +164,24 @@
 
 <script>
     const API_BASE = "/topics";
-    const selectedLanguage = localStorage.getItem("selectedLanguage") || "Spanish";
+    const TOPIC_UNDO_KEY = "topicUndoAction";
+
+    const params = new URLSearchParams(window.location.search);
+    const selectedLanguage = params.get("language") || localStorage.getItem("selectedLanguage") || "Spanish";
+
+    localStorage.setItem("selectedLanguage", selectedLanguage);
 
     const topicList = document.getElementById("topicList");
     const pageTitle = document.getElementById("pageTitle");
     const languageNotice = document.getElementById("languageNotice");
+    const createTopicLink = document.getElementById("createTopicLink");
+    const undoTopicButton = document.getElementById("undoTopicButton");
 
     pageTitle.innerText = selectedLanguage + " Topics";
     languageNotice.innerText = "Choose a topic to start learning " + selectedLanguage + ".";
+    createTopicLink.href = "/add_topic.html?language=" + encodeURIComponent(selectedLanguage);
+
+    undoTopicButton.addEventListener("click", undoLastTopicChange);
 
     function getTopicLanguageAssignments() {
         try {
@@ -180,10 +191,32 @@
         }
     }
 
+    function saveTopicLanguageAssignments(assignments) {
+        localStorage.setItem("topicLanguageAssignments", JSON.stringify(assignments));
+    }
+
+    function assignTopicToLanguage(topicId, language) {
+        const assignments = getTopicLanguageAssignments();
+        const languages = new Set(assignments[topicId] || []);
+        languages.add(language);
+        assignments[topicId] = Array.from(languages);
+        saveTopicLanguageAssignments(assignments);
+    }
+
+    function removeTopicAssignment(topicId) {
+        const assignments = getTopicLanguageAssignments();
+        delete assignments[topicId];
+        saveTopicLanguageAssignments(assignments);
+    }
+
     function topicMatchesLanguage(topic) {
         const assignments = getTopicLanguageAssignments();
 
         if (assignments[topic.id] && assignments[topic.id].includes(selectedLanguage)) {
+            return true;
+        }
+
+        if (topic.category && topic.category.toLowerCase() === selectedLanguage.toLowerCase()) {
             return true;
         }
 
@@ -207,7 +240,7 @@
         if (filteredTopics.length === 0) {
             topicList.innerHTML = `
                 <div class="empty-message">
-                    No topics found for ${selectedLanguage}. Use Create Topic to add one.
+                    No topics found for ${escapeHtml(selectedLanguage)}. Use Create Topic to add one.
                 </div>
             `;
             return;
@@ -235,7 +268,7 @@
 
             const openLink = document.createElement("a");
             openLink.className = "open-button";
-            openLink.href = "/topic.html?id=" + encodeURIComponent(topic.id);
+            openLink.href = "/topic.html?id=" + encodeURIComponent(topic.id) + "&language=" + encodeURIComponent(selectedLanguage);
             openLink.innerText = "Open";
 
             const deleteButton = document.createElement("button");
@@ -244,7 +277,7 @@
             deleteButton.innerText = "Delete Topic";
 
             deleteButton.addEventListener("click", function() {
-                deleteTopic(topic.id, topic.title || "this topic");
+                deleteTopic(topic);
             });
 
             actions.appendChild(openLink);
@@ -261,15 +294,15 @@
         });
     }
 
-    async function deleteTopic(topicId, topicTitle) {
-        const confirmed = window.confirm("Delete " + topicTitle + "?");
+    async function deleteTopic(topic) {
+        const confirmed = window.confirm("Delete " + (topic.title || "this topic") + "?");
 
         if (!confirmed) {
             return;
         }
 
         try {
-            const response = await fetch(API_BASE + "/" + encodeURIComponent(topicId), {
+            const response = await fetch(API_BASE + "/" + encodeURIComponent(topic.id), {
                 method: "DELETE"
             });
 
@@ -277,18 +310,89 @@
                 throw new Error("Delete failed with status " + response.status);
             }
 
-            const assignments = getTopicLanguageAssignments();
+            saveTopicUndoAction({
+                type: "delete",
+                topic: topic,
+                language: selectedLanguage,
+                assignments: getTopicLanguageAssignments()[topic.id] || [selectedLanguage]
+            });
 
-            if (assignments[topicId]) {
-                delete assignments[topicId];
-                localStorage.setItem("topicLanguageAssignments", JSON.stringify(assignments));
-            }
-
+            removeTopicAssignment(topic.id);
             await loadTopics();
         } catch (error) {
             console.error(error);
             alert("Could not delete topic.");
         }
+    }
+
+    async function undoLastTopicChange() {
+        const action = getTopicUndoAction();
+
+        if (!action) {
+            alert("No topic change to undo.");
+            return;
+        }
+
+        try {
+            if (action.type === "create") {
+                const topicId = action.topic?.id;
+
+                if (!topicId) {
+                    throw new Error("Undo data is missing the created topic id.");
+                }
+
+                const response = await fetch(API_BASE + "/" + encodeURIComponent(topicId), {
+                    method: "DELETE"
+                });
+
+                if (!response.ok && response.status !== 204 && response.status !== 404) {
+                    throw new Error("Could not undo topic creation.");
+                }
+
+                removeTopicAssignment(topicId);
+            } else if (action.type === "delete") {
+                const response = await fetch(API_BASE, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(action.topic)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Could not undo topic deletion.");
+                }
+
+                const languages = action.assignments && action.assignments.length > 0
+                    ? action.assignments
+                    : [action.language || selectedLanguage];
+
+                languages.forEach(language => assignTopicToLanguage(action.topic.id, language));
+            }
+
+            clearTopicUndoAction();
+            await loadTopics();
+        } catch (error) {
+            console.error(error);
+            alert(error.message || "Could not undo topic change.");
+        }
+    }
+
+    function getTopicUndoAction() {
+        try {
+            return JSON.parse(localStorage.getItem(TOPIC_UNDO_KEY));
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function saveTopicUndoAction(action) {
+        localStorage.setItem(TOPIC_UNDO_KEY, JSON.stringify(action));
+    }
+
+    function clearTopicUndoAction() {
+        localStorage.removeItem(TOPIC_UNDO_KEY);
     }
 
     async function loadTopics() {
@@ -311,7 +415,17 @@
         }
     }
 
+    function escapeHtml(value) {
+        return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
     loadTopics();
+
 </script>
 
 </body>

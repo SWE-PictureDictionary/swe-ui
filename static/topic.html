@@ -325,6 +325,7 @@
 
     <div class="header-actions">
         <a id="backLink" class="button secondary" href="topic_list.html">Back</a>
+        <button id="undoHotspotButton" class="button secondary" type="button">Undo Last Hotspot Change</button>
         <button id="editModeButton" class="button secondary" type="button">Edit Mode</button>
     </div>
 </header>
@@ -348,8 +349,8 @@
                 <strong id="uniqueStudied">0</strong>
             </div>
             <div class="stat">
-                <span>Completion</span>
-                <strong id="completion">In Progress</strong>
+                <span>Completed Topics</span>
+                <strong id="completedTopics">0</strong>
             </div>
             <button id="undoButton" class="button secondary" type="button" style="width:100%; margin-top:14px;">
                 Undo Last Click
@@ -418,13 +419,14 @@
     const topicSubtitle = document.getElementById("topicSubtitle");
     const backLink = document.getElementById("backLink");
     const editModeButton = document.getElementById("editModeButton");
+    const undoHotspotButton = document.getElementById("undoHotspotButton");
     const topicImage = document.getElementById("topicImage");
     const imageWrap = document.getElementById("imageWrap");
     const editPanel = document.getElementById("editPanel");
     const editList = document.getElementById("editList");
     const totalClicks = document.getElementById("totalClicks");
     const uniqueStudied = document.getElementById("uniqueStudied");
-    const completion = document.getElementById("completion");
+    const completedTopics = document.getElementById("completedTopics");
     const studyStack = document.getElementById("studyStack");
     const undoButton = document.getElementById("undoButton");
 
@@ -454,8 +456,12 @@
     let editingIndex = -1;
     let activeAudio = null;
     let currentPopupAudioUrl = "";
+    let progressEvent = null;
 
     const stackStorageKey = `studyStack:${topicId}:${selectedLanguage}`;
+    const hotspotUndoStorageKey = `hotspotUndoAction:${topicId}:${selectedLanguage}`;
+
+    localStorage.setItem("learnerId", learnerId);
 
     backLink.href = `topic_list.html?language=${encodeURIComponent(selectedLanguage)}`;
     translationLabel.textContent = `${selectedLanguage} Translation`;
@@ -464,6 +470,7 @@
 
     if (!topicId) {
         topicTitle.textContent = "Missing topic id";
+        topicSubtitle.textContent = "Go back and choose a topic.";
     } else {
         loadTopic();
     }
@@ -472,6 +479,9 @@
         editMode = !editMode;
         render();
     });
+
+    undoHotspotButton.addEventListener("click", undoLastHotspotChange);
+    undoButton.addEventListener("click", undoLastStudyClick);
 
     imageWrap.addEventListener("click", event => {
         if (!editMode || event.target.classList.contains("hotspot")) {
@@ -483,12 +493,6 @@
         modalY = ((event.clientY - rect.top) / rect.height) * 100;
 
         openAddHotspotModal(modalX, modalY);
-    });
-
-    undoButton.addEventListener("click", () => {
-        clickedStack.pop();
-        saveStack();
-        renderProgress();
     });
 
     popupCloseButton.addEventListener("click", closePopup);
@@ -516,25 +520,10 @@
 
             topic = await response.json();
             render();
+            await fetchProgressEvent();
         } catch (error) {
             topicTitle.textContent = "Error";
             topicSubtitle.textContent = error.message;
-        }
-    }
-
-    async function completionProgress() {
-        try {
-            const response = await fetch(`/progress/${encodeURIComponent(learnerId)}/topic/${encodeURIComponent(topicId)}`, {
-                    method: 'PATCH'
-                });
-                if (!response.ok) {
-                    completion.textContent = "Error";
-                    return;
-                }
-                const data = await response.json();
-                completion.textContent = data.status; // "COMPLETE" or "IN_PROGRESS"
-            } catch (error) {
-                completion.textContent = "Error";
         }
     }
 
@@ -543,7 +532,7 @@
             return;
         }
 
-        topicTitle.textContent = topic.title;
+        topicTitle.textContent = topic.title || "Untitled Topic";
         topicSubtitle.textContent = `${selectedLanguage} study mode`;
         topicImage.src = topic.imageUrl || "";
         topicImage.alt = topic.title || "Topic image";
@@ -603,6 +592,7 @@
 
         openPopup(hotspot);
         playAudio(audioUrl);
+        recordProgressClick(label);
     }
 
     function renderProgress() {
@@ -611,7 +601,7 @@
         const uniqueLabels = new Set(clickedStack.map(item => item.label));
         uniqueStudied.textContent = String(uniqueLabels.size);
 
-        completionProgress()
+        completedTopics.textContent = String(progressEvent?.completedTopicCount ?? 0);
 
         if (!clickedStack.length) {
             studyStack.innerHTML = `<p style="color:#64748b;">No hotspots clicked yet.</p>`;
@@ -805,6 +795,13 @@
                 throw new Error(errorText || "Could not save hotspot.");
             }
 
+            if (modalMode === "add") {
+                saveHotspotUndoAction({
+                    type: "create",
+                    hotspot: payload
+                });
+            }
+
             closeHotspotModal();
             await loadTopic();
         } catch (error) {
@@ -820,6 +817,8 @@
         }
 
         try {
+            const deletedHotspot = JSON.parse(JSON.stringify(topic.hotspots[index]));
+
             const response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots/${index}`, {
                 method: "DELETE"
             });
@@ -829,10 +828,95 @@
                 throw new Error(errorText || "Could not delete hotspot.");
             }
 
+            saveHotspotUndoAction({
+                type: "delete",
+                hotspot: deletedHotspot,
+                index: index
+            });
+
             await loadTopic();
         } catch (error) {
             alert(error.message);
         }
+    }
+
+    async function undoLastHotspotChange() {
+        const action = getHotspotUndoAction();
+
+        if (!action) {
+            alert("No hotspot change to undo.");
+            return;
+        }
+
+        try {
+            if (action.type === "create") {
+                await loadTopic();
+
+                const index = findHotspotIndex(action.hotspot);
+
+                if (index < 0) {
+                    clearHotspotUndoAction();
+                    alert("That created hotspot is no longer on this topic.");
+                    return;
+                }
+
+                const response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots/${index}`, {
+                    method: "DELETE"
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Could not undo hotspot creation.");
+                }
+            } else if (action.type === "delete") {
+                const response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(action.hotspot)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Could not undo hotspot deletion.");
+                }
+            }
+
+            clearHotspotUndoAction();
+            await loadTopic();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function findHotspotIndex(targetHotspot) {
+        const hotspots = topic?.hotspots || [];
+        const targetLabel = (targetHotspot?.label || "").toLowerCase();
+
+        return hotspots.findIndex(hotspot => {
+            const sameLabel = (hotspot.label || "").toLowerCase() === targetLabel;
+            const sameX = Number(hotspot.xPercent ?? hotspot.xpercent ?? 50) === Number(targetHotspot.xPercent ?? targetHotspot.xpercent ?? 50);
+            const sameY = Number(hotspot.yPercent ?? hotspot.ypercent ?? 50) === Number(targetHotspot.yPercent ?? targetHotspot.ypercent ?? 50);
+
+            return sameLabel && sameX && sameY;
+        });
+    }
+
+    function getHotspotUndoAction() {
+        try {
+            return JSON.parse(localStorage.getItem(hotspotUndoStorageKey));
+        } catch {
+            return null;
+        }
+    }
+
+    function saveHotspotUndoAction(action) {
+        localStorage.setItem(hotspotUndoStorageKey, JSON.stringify(action));
+    }
+
+    function clearHotspotUndoAction() {
+        localStorage.removeItem(hotspotUndoStorageKey);
     }
 
     async function uploadFile(type, file) {
@@ -907,6 +991,70 @@
         const key = Object.keys(object).find(item => item.toLowerCase() === selectedLanguage.toLowerCase());
 
         return key ? object[key] : "";
+    }
+
+    async function recordProgressClick(label) {
+        try {
+            await fetch("/progress/click", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    learnerId: learnerId,
+                    topicId: topicId,
+                    label: label
+                })
+            });
+
+            await fetchProgressEvent();
+        } catch (error) {
+            console.warn("Could not record progress click:", error);
+        }
+    }
+
+    async function undoLastStudyClick() {
+        if (!clickedStack.length) {
+            alert("No study click to undo.");
+            return;
+        }
+
+        clickedStack.pop();
+        saveStack();
+        renderProgress();
+
+        try {
+            const response = await fetch(`/progress/${encodeURIComponent(learnerId)}/topic/${encodeURIComponent(topicId)}/latest`, {
+                method: "DELETE"
+            });
+
+            if (!response.ok) {
+                console.warn("Backend undo click failed with status:", response.status);
+            }
+
+            await fetchProgressEvent();
+        } catch (error) {
+            console.warn("Could not undo backend progress click:", error);
+        }
+
+        renderProgress();
+    }
+
+    async function fetchProgressEvent() {
+        try {
+            const response = await fetch(`/progress/${encodeURIComponent(learnerId)}/event`);
+
+            if (!response.ok) {
+                throw new Error("Progress event request failed.");
+            }
+
+            progressEvent = await response.json();
+            renderProgress();
+        } catch (error) {
+            console.warn("Could not load progress event:", error);
+            progressEvent = null;
+            renderProgress();
+        }
     }
 
     function loadStack() {
