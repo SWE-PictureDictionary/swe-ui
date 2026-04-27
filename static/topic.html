@@ -347,6 +347,10 @@
                 <span>Unique Studied</span>
                 <strong id="uniqueStudied">0</strong>
             </div>
+            <div class="stat">
+                <span>Completion</span>
+                <strong id="completion">In Progress</strong>
+            </div>
             <button id="undoButton" class="button secondary" type="button" style="width:100%; margin-top:14px;">
                 Undo Last Click
             </button>
@@ -405,6 +409,7 @@
 <script>
     const params = new URLSearchParams(window.location.search);
     const topicId = params.get("id") || params.get("topicId");
+    const learnerId = 1;
     const selectedLanguage = params.get("language") || localStorage.getItem("selectedLanguage") || "Spanish";
 
     localStorage.setItem("selectedLanguage", selectedLanguage);
@@ -419,6 +424,7 @@
     const editList = document.getElementById("editList");
     const totalClicks = document.getElementById("totalClicks");
     const uniqueStudied = document.getElementById("uniqueStudied");
+    const completion = document.getElementById("completion");
     const studyStack = document.getElementById("studyStack");
     const undoButton = document.getElementById("undoButton");
 
@@ -516,6 +522,22 @@
         }
     }
 
+    async function completionProgress() {
+        try {
+            const response = await fetch(`/progress/${encodeURIComponent(learnerId)}/topic/${encodeURIComponent(topicId)}`, {
+                    method: 'PATCH'
+                });
+                if (!response.ok) {
+                    completion.textContent = "Error";
+                    return;
+                }
+                const data = await response.json();
+                completion.textContent = data.status; // "COMPLETE" or "IN_PROGRESS"
+            } catch (error) {
+                completion.textContent = "Error";
+        }
+    }
+
     function render() {
         if (!topic) {
             return;
@@ -588,6 +610,8 @@
 
         const uniqueLabels = new Set(clickedStack.map(item => item.label));
         uniqueStudied.textContent = String(uniqueLabels.size);
+
+        completionProgress()
 
         if (!clickedStack.length) {
             studyStack.innerHTML = `<p style="color:#64748b;">No hotspots clicked yet.</p>`;
