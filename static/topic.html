@@ -81,6 +81,10 @@
             padding: 28px 34px;
         }
 
+        .layout.single-column {
+            grid-template-columns: 1fr;
+        }
+
         .study-card {
             background: white;
             border-radius: 24px;
@@ -336,7 +340,7 @@
     </div>
 </header>
 
-<main class="layout">
+<main id="topicLayout" class="layout">
     <section class="study-card">
         <div id="imageWrap" class="image-wrap">
             <img id="topicImage" class="topic-image" alt="Topic image">
@@ -344,7 +348,7 @@
     </section>
 
     <aside class="side-panel">
-        <section class="panel-card">
+        <section id="progressPanel" class="panel-card">
             <h2>Progress</h2>
             <div class="stat">
                 <span>Total Clicks</span>
@@ -363,7 +367,7 @@
             </button>
         </section>
 
-        <section class="panel-card">
+        <section id="studyStackPanel" class="panel-card">
             <h2>Study Stack</h2>
             <div id="studyStack" class="stack-list"></div>
         </section>
@@ -413,6 +417,7 @@
     </div>
 </div>
 
+<script src="/auth.js"></script>
 <script>
     const params = new URLSearchParams(window.location.search);
     const topicId = params.get("id") || params.get("topicId");
@@ -424,12 +429,16 @@
     const topicTitle = document.getElementById("topicTitle");
     const topicSubtitle = document.getElementById("topicSubtitle");
     const backLink = document.getElementById("backLink");
+    const topicLayout = document.getElementById("topicLayout");
     const editModeButton = document.getElementById("editModeButton");
     const undoHotspotButton = document.getElementById("undoHotspotButton");
     const topicImage = document.getElementById("topicImage");
     const imageWrap = document.getElementById("imageWrap");
+    const sidePanel = document.querySelector(".side-panel");
     const editPanel = document.getElementById("editPanel");
     const editList = document.getElementById("editList");
+    const progressPanel = document.getElementById("progressPanel");
+    const studyStackPanel = document.getElementById("studyStackPanel");
     const totalClicks = document.getElementById("totalClicks");
     const uniqueStudied = document.getElementById("uniqueStudied");
     const completedTopics = document.getElementById("completedTopics");
@@ -463,6 +472,7 @@
     let activeAudio = null;
     let currentPopupAudioUrl = "";
     let progressEvent = null;
+    let currentUser = null;
 
     const stackStorageKey = `studyStack:${topicId}:${selectedLanguage}`;
     const hotspotUndoStorageKey = `hotspotUndoAction:${topicId}:${selectedLanguage}`;
@@ -474,14 +484,11 @@
 
     let clickedStack = loadStack();
 
-    if (!topicId) {
-        topicTitle.textContent = "Missing topic id";
-        topicSubtitle.textContent = "Go back and choose a topic.";
-    } else {
-        loadTopic();
-    }
-
     editModeButton.addEventListener("click", () => {
+        if (!canEditHotspots(currentUser)) {
+            return;
+        }
+
         editMode = !editMode;
         render();
     });
@@ -490,7 +497,7 @@
     undoButton.addEventListener("click", undoLastStudyClick);
 
     imageWrap.addEventListener("click", event => {
-        if (!editMode || event.target.classList.contains("hotspot")) {
+        if (!canEditHotspots(currentUser) || !editMode || event.target.classList.contains("hotspot")) {
             return;
         }
 
@@ -516,6 +523,55 @@
     cancelHotspotButton.addEventListener("click", closeHotspotModal);
     saveHotspotButton.addEventListener("click", saveHotspot);
 
+    async function initializePage() {
+        try {
+            currentUser = await loadCurrentUser();
+
+            if (!currentUser) {
+                return;
+            }
+
+            applyRoleControls();
+
+            if (!topicId) {
+                topicTitle.textContent = "Missing topic id";
+                topicSubtitle.textContent = "Go back and choose a topic.";
+                return;
+            }
+
+            await loadTopic();
+        } catch (error) {
+            console.error(error);
+            topicTitle.textContent = "Error";
+            topicSubtitle.textContent = "Could not verify your sign-in status.";
+        }
+    }
+
+    function applyRoleControls() {
+        const canEdit = canEditHotspots(currentUser);
+
+        editModeButton.style.display = canEdit ? "" : "none";
+        undoHotspotButton.style.display = canEdit ? "" : "none";
+
+        if (!canEdit) {
+            editMode = false;
+        }
+
+        updateTopicPanels();
+    }
+
+    function updateTopicPanels() {
+        const learner = canLearn(currentUser);
+        const showEditPanel = canEditHotspots(currentUser) && editMode;
+        const showSidePanel = learner || showEditPanel;
+
+        progressPanel.style.display = learner ? "" : "none";
+        studyStackPanel.style.display = learner ? "" : "none";
+        editPanel.style.display = showEditPanel ? "block" : "none";
+        sidePanel.style.display = showSidePanel ? "" : "none";
+        topicLayout.classList.toggle("single-column", !showSidePanel);
+    }
+
     async function loadTopic() {
         try {
             const response = await fetch(`/topics/${encodeURIComponent(topicId)}`);
@@ -526,7 +582,10 @@
 
             topic = await response.json();
             render();
-            await fetchProgressEvent();
+
+            if (canLearn(currentUser)) {
+                await fetchProgressEvent();
+            }
         } catch (error) {
             topicTitle.textContent = "Error";
             topicSubtitle.textContent = error.message;
@@ -545,7 +604,7 @@
 
         editModeButton.textContent = editMode ? "Done Editing" : "Edit Mode";
         editModeButton.className = editMode ? "button edit-active" : "button secondary";
-        editPanel.style.display = editMode ? "block" : "none";
+        updateTopicPanels();
 
         renderHotspots();
         renderProgress();
@@ -571,7 +630,7 @@
             marker.addEventListener("click", event => {
                 event.stopPropagation();
 
-                if (editMode) {
+                if (canEditHotspots(currentUser) && editMode) {
                     openEditHotspotModal(index);
                 } else {
                     handleStudyClick(hotspot);
@@ -587,21 +646,27 @@
         const translation = getLanguageValue(hotspot.translations) || "";
         const audioUrl = getLanguageValue(hotspot.audioUrls) || "";
 
-        clickedStack.push({
-            label: label,
-            translation: translation,
-            time: new Date().toLocaleTimeString()
-        });
-
-        saveStack();
-        renderProgress();
-
         openPopup(hotspot);
         playAudio(audioUrl);
-        recordProgressClick(label);
+
+        if (canLearn(currentUser)) {
+            clickedStack.push({
+                label: label,
+                translation: translation,
+                time: new Date().toLocaleTimeString()
+            });
+
+            saveStack();
+            renderProgress();
+            recordProgressClick(label);
+        }
     }
 
     function renderProgress() {
+        if (!canLearn(currentUser)) {
+            return;
+        }
+
         totalClicks.textContent = String(clickedStack.length);
 
         const uniqueLabels = new Set(clickedStack.map(item => item.label));
@@ -628,6 +693,11 @@
     }
 
     function renderEditList() {
+        if (!canEditHotspots(currentUser)) {
+            editList.innerHTML = "";
+            return;
+        }
+
         const hotspots = topic.hotspots || [];
 
         if (!hotspots.length) {
@@ -686,6 +756,10 @@
     }
 
     function openAddHotspotModal(x, y) {
+        if (!canEditHotspots(currentUser)) {
+            return;
+        }
+
         modalMode = "add";
         modalX = x;
         modalY = y;
@@ -702,6 +776,10 @@
     }
 
     function openEditHotspotModal(index) {
+        if (!canEditHotspots(currentUser)) {
+            return;
+        }
+
         const hotspot = topic.hotspots[index];
 
         modalMode = "edit";
@@ -724,6 +802,10 @@
     }
 
     async function saveHotspot() {
+        if (!canEditHotspots(currentUser)) {
+            return;
+        }
+
         modalMessage.textContent = "";
 
         const label = hotspotLabel.value.trim();
@@ -777,7 +859,7 @@
             let response;
 
             if (modalMode === "add") {
-                response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots`, {
+                response = await fetchWithCsrf(`/topics/${encodeURIComponent(topicId)}/hotspots`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -787,7 +869,7 @@
             } else {
                 const oldLabel = topic.hotspots[editingIndex].label;
 
-                response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots/${encodeURIComponent(oldLabel)}`, {
+                response = await fetchWithCsrf(`/topics/${encodeURIComponent(topicId)}/hotspots/${encodeURIComponent(oldLabel)}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json"
@@ -816,6 +898,10 @@
     }
 
     async function deleteHotspot(index) {
+        if (!canEditHotspots(currentUser)) {
+            return;
+        }
+
         const confirmed = confirm("Delete this hotspot?");
 
         if (!confirmed) {
@@ -825,7 +911,7 @@
         try {
             const deletedHotspot = JSON.parse(JSON.stringify(topic.hotspots[index]));
 
-            const response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots/${index}`, {
+            const response = await fetchWithCsrf(`/topics/${encodeURIComponent(topicId)}/hotspots/${index}`, {
                 method: "DELETE"
             });
 
@@ -847,6 +933,10 @@
     }
 
     async function undoLastHotspotChange() {
+        if (!canEditHotspots(currentUser)) {
+            return;
+        }
+
         const action = getHotspotUndoAction();
 
         if (!action) {
@@ -866,7 +956,7 @@
                     return;
                 }
 
-                const response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots/${index}`, {
+                const response = await fetchWithCsrf(`/topics/${encodeURIComponent(topicId)}/hotspots/${index}`, {
                     method: "DELETE"
                 });
 
@@ -875,7 +965,7 @@
                     throw new Error(errorText || "Could not undo hotspot creation.");
                 }
             } else if (action.type === "delete") {
-                const response = await fetch(`/topics/${encodeURIComponent(topicId)}/hotspots`, {
+                const response = await fetchWithCsrf(`/topics/${encodeURIComponent(topicId)}/hotspots`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -926,10 +1016,14 @@
     }
 
     async function uploadFile(type, file) {
+        if (!canEditHotspots(currentUser)) {
+            throw new Error("This account cannot upload hotspot files.");
+        }
+
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch(`/topics/${encodeURIComponent(topicId)}/${type}`, {
+        const response = await fetchWithCsrf(`/topics/${encodeURIComponent(topicId)}/${type}`, {
             method: "POST",
             body: formData
         });
@@ -1000,8 +1094,12 @@
     }
 
     async function recordProgressClick(label) {
+        if (!canLearn(currentUser)) {
+            return;
+        }
+
         try {
-            await fetch("/progress/click", {
+            await fetchWithCsrf("/progress/click", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -1020,6 +1118,10 @@
     }
 
     async function undoLastStudyClick() {
+        if (!canLearn(currentUser)) {
+            return;
+        }
+
         if (!clickedStack.length) {
             alert("No study click to undo.");
             return;
@@ -1030,7 +1132,7 @@
         renderProgress();
 
         try {
-            const response = await fetch(`/progress/${encodeURIComponent(learnerId)}/topic/${encodeURIComponent(topicId)}/latest`, {
+            const response = await fetchWithCsrf(`/progress/${encodeURIComponent(learnerId)}/topic/${encodeURIComponent(topicId)}/latest`, {
                 method: "DELETE"
             });
 
@@ -1047,6 +1149,10 @@
     }
 
     async function fetchProgressEvent() {
+        if (!canLearn(currentUser)) {
+            return;
+        }
+
         try {
             const response = await fetch(`/progress/${encodeURIComponent(learnerId)}/event`);
 
@@ -1087,6 +1193,8 @@
     function logout() {
         window.location.assign("/logout");
     }
+
+    initializePage();
 </script>
 </body>
 </html>

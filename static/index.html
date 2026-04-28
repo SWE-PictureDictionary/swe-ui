@@ -97,7 +97,12 @@
     </div>
 </div>
 
+<script src="/auth.js"></script>
 <script>
+    loadCurrentUser().catch(() => {
+        window.location.replace("/login.html");
+    });
+
     document.querySelectorAll(".language-button").forEach(function(button) {
         button.addEventListener("click", function() {
             const selectedLanguage = button.dataset.language;

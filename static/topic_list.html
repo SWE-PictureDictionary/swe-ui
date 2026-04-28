@@ -169,6 +169,7 @@
     <div id="topicList" class="topic-list"></div>
 </div>
 
+<script src="/auth.js"></script>
 <script>
     const API_BASE = "/topics";
     const TOPIC_UNDO_KEY = "topicUndoAction";
@@ -183,12 +184,19 @@
     const languageNotice = document.getElementById("languageNotice");
     const createTopicLink = document.getElementById("createTopicLink");
     const undoTopicButton = document.getElementById("undoTopicButton");
+    let currentUser = null;
 
     pageTitle.innerText = selectedLanguage + " Topics";
     languageNotice.innerText = "Choose a topic to start learning " + selectedLanguage + ".";
     createTopicLink.href = "/add_topic.html?language=" + encodeURIComponent(selectedLanguage);
 
     undoTopicButton.addEventListener("click", undoLastTopicChange);
+
+    function applyRoleControls() {
+        const canManage = canManageTopics(currentUser);
+        createTopicLink.style.display = canManage ? "" : "none";
+        undoTopicButton.style.display = canManage ? "" : "none";
+    }
 
     function getTopicLanguageAssignments() {
         try {
@@ -245,9 +253,10 @@
         const filteredTopics = topics.filter(topicMatchesLanguage);
 
         if (filteredTopics.length === 0) {
+            const createHint = canManageTopics(currentUser) ? " Use Create Topic to add one." : "";
             topicList.innerHTML = `
                 <div class="empty-message">
-                    No topics found for ${escapeHtml(selectedLanguage)}. Use Create Topic to add one.
+                    No topics found for ${escapeHtml(selectedLanguage)}.${createHint}
                 </div>
             `;
             return;
@@ -278,17 +287,20 @@
             openLink.href = "/topic.html?id=" + encodeURIComponent(topic.id) + "&language=" + encodeURIComponent(selectedLanguage);
             openLink.innerText = "Open";
 
-            const deleteButton = document.createElement("button");
-            deleteButton.className = "delete-button";
-            deleteButton.type = "button";
-            deleteButton.innerText = "Delete Topic";
-
-            deleteButton.addEventListener("click", function() {
-                deleteTopic(topic);
-            });
-
             actions.appendChild(openLink);
-            actions.appendChild(deleteButton);
+
+            if (canManageTopics(currentUser)) {
+                const deleteButton = document.createElement("button");
+                deleteButton.className = "delete-button";
+                deleteButton.type = "button";
+                deleteButton.innerText = "Delete Topic";
+
+                deleteButton.addEventListener("click", function() {
+                    deleteTopic(topic);
+                });
+
+                actions.appendChild(deleteButton);
+            }
 
             content.appendChild(title);
             content.appendChild(category);
@@ -302,6 +314,10 @@
     }
 
     async function deleteTopic(topic) {
+        if (!canManageTopics(currentUser)) {
+            return;
+        }
+
         const confirmed = window.confirm("Delete " + (topic.title || "this topic") + "?");
 
         if (!confirmed) {
@@ -309,7 +325,7 @@
         }
 
         try {
-            const response = await fetch(API_BASE + "/" + encodeURIComponent(topic.id), {
+            const response = await fetchWithCsrf(API_BASE + "/" + encodeURIComponent(topic.id), {
                 method: "DELETE"
             });
 
@@ -333,6 +349,10 @@
     }
 
     async function undoLastTopicChange() {
+        if (!canManageTopics(currentUser)) {
+            return;
+        }
+
         const action = getTopicUndoAction();
 
         if (!action) {
@@ -348,7 +368,7 @@
                     throw new Error("Undo data is missing the created topic id.");
                 }
 
-                const response = await fetch(API_BASE + "/" + encodeURIComponent(topicId), {
+                const response = await fetchWithCsrf(API_BASE + "/" + encodeURIComponent(topicId), {
                     method: "DELETE"
                 });
 
@@ -358,7 +378,7 @@
 
                 removeTopicAssignment(topicId);
             } else if (action.type === "delete") {
-                const response = await fetch(API_BASE, {
+                const response = await fetchWithCsrf(API_BASE, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -435,7 +455,27 @@
         window.location.assign("/logout");
     }
 
-    loadTopics();
+    async function initializePage() {
+        try {
+            currentUser = await loadCurrentUser();
+
+            if (!currentUser) {
+                return;
+            }
+
+            applyRoleControls();
+            await loadTopics();
+        } catch (error) {
+            console.error(error);
+            topicList.innerHTML = `
+                <div class="empty-message">
+                    Could not verify your sign-in status.
+                </div>
+            `;
+        }
+    }
+
+    initializePage();
 
 </script>
 

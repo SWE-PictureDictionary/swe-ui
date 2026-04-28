@@ -136,6 +136,7 @@
     </form>
 </main>
 
+<script src="/auth.js"></script>
 <script>
     const TOPIC_UNDO_KEY = "topicUndoAction";
 
@@ -152,6 +153,9 @@
     const topicImageInput = document.getElementById("topicImage");
     const imagePreview = document.getElementById("imagePreview");
     const message = document.getElementById("message");
+    let currentUser = null;
+
+    setFormEnabled(false);
 
     topicImageInput.addEventListener("change", async () => {
         const file = topicImageInput.files[0];
@@ -170,6 +174,10 @@
     form.addEventListener("submit", async event => {
         event.preventDefault();
         message.textContent = "";
+
+        if (!canManageTopics(currentUser)) {
+            return;
+        }
 
         const title = topicNameInput.value.trim();
         const file = topicImageInput.files[0];
@@ -191,7 +199,7 @@
         };
 
         try {
-            const response = await fetch("/topics", {
+            const response = await fetchWithCsrf("/topics", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -262,9 +270,37 @@
         localStorage.setItem(TOPIC_UNDO_KEY, JSON.stringify(action));
     }
 
+    function setFormEnabled(enabled) {
+        Array.from(form.elements).forEach(element => {
+            element.disabled = !enabled;
+        });
+    }
+
+    async function initializePage() {
+        try {
+            currentUser = await loadCurrentUser();
+
+            if (!currentUser) {
+                return;
+            }
+
+            if (!canManageTopics(currentUser)) {
+                window.location.replace(`topic_list.html?language=${encodeURIComponent(selectedLanguage)}`);
+                return;
+            }
+
+            setFormEnabled(true);
+        } catch (error) {
+            console.error(error);
+            message.textContent = "Could not verify your sign-in status.";
+        }
+    }
+
     function logout() {
         window.location.assign("/logout");
     }
+
+    initializePage();
 </script>
 </body>
 </html>
