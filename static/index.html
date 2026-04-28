@@ -60,9 +60,29 @@
         .language-button:active {
             transform: translateY(0);
         }
+
+        .logout-button {
+            position: fixed;
+            top: 22px;
+            right: 24px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: white;
+            color: #222;
+            font-size: 15px;
+            font-weight: 800;
+            padding: 11px 16px;
+            cursor: pointer;
+        }
+
+        .logout-button:hover {
+            background: #e2e8f0;
+        }
     </style>
 </head>
 <body>
+
+<button class="logout-button" type="button" onclick="logout()">Logout</button>
 
 <div class="page">
     <h1>Picture Dictionary</h1>
@@ -85,6 +105,10 @@
             window.location.href = "/topic_list.html?language=" + encodeURIComponent(selectedLanguage);
         });
     });
+
+    function logout() {
+        window.location.assign("/logout");
+    }
 </script>
 
 </body>

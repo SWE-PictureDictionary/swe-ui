@@ -64,6 +64,11 @@
             color: white;
         }
 
+        .logout {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
         .edit-active {
             background: #16a34a;
             color: white;
@@ -327,6 +332,7 @@
         <a id="backLink" class="button secondary" href="topic_list.html">Back</a>
         <button id="undoHotspotButton" class="button secondary" type="button">Undo Last Hotspot Change</button>
         <button id="editModeButton" class="button secondary" type="button">Edit Mode</button>
+        <button class="button logout" type="button" onclick="logout()">Logout</button>
     </div>
 </header>
 
@@ -1076,6 +1082,10 @@
             .replaceAll(">", "&gt;")
             .replaceAll('"', "&quot;")
             .replaceAll("'", "&#039;");
+    }
+
+    function logout() {
+        window.location.assign("/logout");
     }
 </script>
 </body>

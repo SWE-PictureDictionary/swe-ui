@@ -61,6 +61,12 @@
             border-color: #222;
         }
 
+        .action-button.danger {
+            background: #e2e8f0;
+            color: #222;
+            border-color: #cbd5e1;
+        }
+
         .topic-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -156,6 +162,7 @@
             <a class="action-button" href="/index.html">Change Language</a>
             <button id="undoTopicButton" class="action-button" type="button">Undo Last Topic Change</button>
             <a id="createTopicLink" class="action-button primary" href="/add_topic.html">Create Topic</a>
+            <button class="action-button danger" type="button" onclick="logout()">Logout</button>
         </div>
     </div>
 
@@ -422,6 +429,10 @@
             .replaceAll(">", "&gt;")
             .replaceAll('"', "&quot;")
             .replaceAll("'", "&#039;");
+    }
+
+    function logout() {
+        window.location.assign("/logout");
     }
 
     loadTopics();

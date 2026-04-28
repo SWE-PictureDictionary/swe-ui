@@ -18,6 +18,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 18px;
         }
 
         h1 {
@@ -29,6 +30,13 @@
             text-decoration: none;
             color: #2563eb;
             font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .container {
@@ -83,6 +91,19 @@
             background: #1d4ed8;
         }
 
+        .logout-button {
+            width: auto;
+            margin-top: 0;
+            background: #e2e8f0;
+            color: #1e293b;
+            padding: 11px 16px;
+            font-size: 14px;
+        }
+
+        .logout-button:hover {
+            background: #cbd5e1;
+        }
+
         .message {
             margin-top: 16px;
             color: #dc2626;
@@ -93,7 +114,10 @@
 <body>
 <header>
     <h1 id="title">Create Topic</h1>
-    <a id="backLink" class="back-link" href="topic_list.html">Back to Topics</a>
+    <div class="header-actions">
+        <a id="backLink" class="back-link" href="topic_list.html">Back to Topics</a>
+        <button class="logout-button" type="button" onclick="logout()">Logout</button>
+    </div>
 </header>
 
 <main class="container">
@@ -236,6 +260,10 @@
 
     function saveTopicUndoAction(action) {
         localStorage.setItem(TOPIC_UNDO_KEY, JSON.stringify(action));
+    }
+
+    function logout() {
+        window.location.assign("/logout");
     }
 </script>
 </body>

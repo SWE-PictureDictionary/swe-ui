@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Picture Dictionary Login</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .login-panel {
+            width: min(100%, 480px);
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 34px;
+        }
+
+        .subtitle {
+            margin: 0 0 24px;
+            color: #64748b;
+            font-size: 16px;
+            line-height: 1.45;
+        }
+
+        .login-button {
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            padding: 14px 18px;
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .login-button:hover {
+            background: #1d4ed8;
+        }
+
+        .accounts {
+            margin-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 18px;
+            color: #475569;
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .accounts strong {
+            color: #1e293b;
+        }
+
+        code {
+            background: #f1f5f9;
+            border-radius: 6px;
+            padding: 2px 5px;
+        }
+
+        .message {
+            min-height: 22px;
+            margin-top: 14px;
+            color: #64748b;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+<main class="login-panel">
+    <h1>Picture Dictionary</h1>
+    <p class="subtitle">Sign in to continue.</p>
+
+    <button id="loginButton" class="login-button" type="button">Log In</button>
+    <div id="message" class="message"></div>
+
+    <div class="accounts">
+        <strong>Demo accounts</strong><br>
+        Content Manager: <code>manager1</code> / <code>password</code><br>
+        Hotspot Editor: <code>hotspot1</code> / <code>password</code><br>
+        Learner: <code>learner1</code> / <code>password</code>
+    </div>
+</main>
+
+<script>
+    const message = document.getElementById("message");
+
+    document.getElementById("loginButton").addEventListener("click", function() {
+        window.location.assign("/oauth2/authorization/keycloak");
+    });
+
+    fetch("/api/me", { credentials: "same-origin" })
+        .then(response => {
+            if (response.status === 401) {
+                return null;
+            }
+
+            if (!response.ok) {
+                throw new Error("Could not check sign-in status.");
+            }
+
+            return response.json();
+        })
+        .then(user => {
+            if (user) {
+                window.location.assign("/index.html");
+            }
+        })
+        .catch(() => {
+            message.textContent = "";
+        });
+</script>
+</body>
+</html>

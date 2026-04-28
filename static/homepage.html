@@ -65,6 +65,24 @@
             box-shadow: 0 12px 25px rgba(37, 99, 235, 0.28);
         }
 
+        .logout-button {
+            position: fixed;
+            top: 22px;
+            right: 24px;
+            border: none;
+            border-radius: 10px;
+            background: #e2e8f0;
+            color: #1f2937;
+            font-size: 15px;
+            font-weight: 800;
+            padding: 11px 16px;
+            cursor: pointer;
+        }
+
+        .logout-button:hover {
+            background: #cbd5e1;
+        }
+
         @media (max-width: 900px) {
             .language-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -95,6 +113,8 @@
     </style>
 </head>
 <body>
+<button class="logout-button" type="button" onclick="logout()">Logout</button>
+
 <main class="page-card">
     <h1>Picture Dictionary</h1>
     <p>Choose a language to start studying.</p>
@@ -109,8 +129,30 @@
 </main>
 
 <script>
+    fetch("/api/me", { credentials: "same-origin" })
+        .then(response => {
+            if (response.status === 401) {
+                window.location.replace("/login.html");
+                return null;
+            }
+
+            if (!response.ok) {
+                throw new Error("Could not check sign-in status.");
+            }
+
+            return response.json();
+        })
+        .catch(() => {
+            window.location.replace("/login.html");
+        });
+
     function chooseLanguage(language) {
+        localStorage.setItem("selectedLanguage", language);
         window.location.href = `topic_list.html?language=${encodeURIComponent(language)}`;
+    }
+
+    function logout() {
+        window.location.assign("/logout");
     }
 </script>
 </body>
