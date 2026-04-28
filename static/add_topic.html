@@ -304,6 +304,7 @@
     let editingHotspotIndex = null;
     let pendingXPercent = null;
     let pendingYPercent = null;
+    let userCanManageTopics = false;
 
     function getTopicLanguageAssignments() {
         try {
@@ -547,6 +548,10 @@
     });
 
     saveTopicButton.addEventListener("click", async function() {
+        if (!userCanManageTopics) {
+            return;
+        }
+
         const title = topicTitleInput.value.trim();
         const category = topicCategoryInput.value.trim() || "Custom";
 
@@ -573,9 +578,9 @@
         try {
             const response = await fetch(API_BASE, {
                 method: "POST",
-                headers: {
+                headers: csrfHeaders({
                     "Content-Type": "application/json"
-                },
+                }),
                 body: JSON.stringify(payload)
             });
 
@@ -600,15 +605,15 @@
 
 <script src="../js/app.js"></script>
 <script>
-    requireAuth();
-    window.addEventListener("DOMContentLoaded", () => {
-        attachLogoutButton();
-    });
-</script>
+    requireAuth().then(user => {
+        if (!user) return;
 
-<script src="/js/app.js"></script>
-<script>
-    requireAuth();
+        userCanManageTopics = canManageTopics(user);
+        if (!userCanManageTopics) {
+            window.location.assign("/topic_list.html");
+        }
+    });
+
     window.addEventListener("DOMContentLoaded", () => {
         attachLogoutButton();
     });

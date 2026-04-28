@@ -31,6 +31,21 @@
             max-width: 700px;
         }
 
+        .page-actions {
+            margin-top: 18px;
+        }
+
+        .primary-link {
+            display: none;
+            padding: 10px 14px;
+            border: 1px solid black;
+            border-radius: 8px;
+            background: #b4b4b4;
+            color: black;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
         .topic-card {
             background: #b4b4b4;
             padding: 16px;
@@ -99,11 +114,16 @@
 <h1 id="pageTitle">Topics</h1>
 <p id="languageLabel"></p>
 
+<div class="page-actions">
+    <a id="addTopicLink" class="primary-link" href="/add_topic.html">Add Topic</a>
+</div>
+
 <div class="topic-list" id="topicList"></div>
 
 <script>
     const selectedLanguage = localStorage.getItem("selectedLanguage") || "Spanish";
     const topicList = document.getElementById("topicList");
+    const addTopicLink = document.getElementById("addTopicLink");
     const API_BASE = "/topics";
 
     console.log("Calling API:", API_BASE);
@@ -135,8 +155,10 @@
             topicList.innerHTML = "";
 
             currentUserInfo = await currentUser();
+            const canDeleteTopics = canManageTopics(currentUserInfo);
+            addTopicLink.style.display = canDeleteTopics ? "inline-block" : "none";
 
-            topics.forEach(topic => {
+            filteredTopics.forEach(topic => {
                 const div = document.createElement("div");
                 div.className = "topic-card";
 
@@ -148,35 +170,38 @@
                     '<div class="topic-title">' + topic.title + '</div>' +
                     '<div class="topic-category">Category: ' + topic.category + '</div>' +
                     '<img src="' + topic.imageUrl + '" alt="' + topic.title + '">' +
-                    '<div class="topic-actions">' +
-                    '<button class="delete-button">Delete Topic</button>' +
-                    '</div>';
+                    (canDeleteTopics
+                        ? '<div class="topic-actions"><button class="delete-button">Delete Topic</button></div>'
+                        : '');
 
                 const deleteButton = div.querySelector(".delete-button");
 
-                deleteButton.addEventListener("click", async function(event) {
-                    event.stopPropagation();
+                if (deleteButton) {
+                    deleteButton.addEventListener("click", async function(event) {
+                        event.stopPropagation();
 
-                    const confirmed = window.confirm('Delete topic "' + topic.title + '"?');
-                    if (!confirmed) {
-                        return;
-                    }
-
-                    try {
-                        const deleteResponse = await fetch(API_BASE + "/" + topic.id, {
-                            method: "DELETE"
-                        });
-
-                        if (!deleteResponse.ok) {
-                            throw new Error("HTTP error " + deleteResponse.status);
+                        const confirmed = window.confirm('Delete topic "' + topic.title + '"?');
+                        if (!confirmed) {
+                            return;
                         }
 
-                        await loadTopics();
-                    } catch (error) {
-                        console.error(error);
-                        alert("Could not delete topic.");
-                    }
-                });
+                        try {
+                            const deleteResponse = await fetch(API_BASE + "/" + topic.id, {
+                                method: "DELETE",
+                                headers: csrfHeaders()
+                            });
+
+                            if (!deleteResponse.ok) {
+                                throw new Error("HTTP error " + deleteResponse.status);
+                            }
+
+                            await loadTopics();
+                        } catch (error) {
+                            console.error(error);
+                            alert("Could not delete topic.");
+                        }
+                    });
+                }
 
                 topicList.appendChild(div);
             });

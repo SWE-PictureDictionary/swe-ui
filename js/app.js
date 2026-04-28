@@ -16,12 +16,6 @@ async function currentUser() {
     }
 }
 
-function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    return parts.length === 2 ? parts.pop().split(";").shift() : null;
-}
-
 async function requireAuth() {
     const user = await currentUser();
     if (!user) {
@@ -31,20 +25,65 @@ async function requireAuth() {
     return user;
 }
 
-async function logout() {
-    const csrf = getCookie("XSRF-TOKEN");
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length !== 2) {
+        return null;
+    }
 
-    await fetch("/logout", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: csrf ? { "X-XSRF-TOKEN": csrf } : {}
-    });
+    const cookieValue = parts.pop().split(";").shift();
 
-    window.location.assign("/login.html");
+    try {
+        return decodeURIComponent(cookieValue);
+    } catch (error) {
+        return cookieValue;
+    }
+}
+
+function csrfHeaders(headers = {}) {
+    const csrfToken = getCookie("XSRF-TOKEN");
+    if (!csrfToken) {
+        return headers;
+    }
+
+    return {
+        ...headers,
+        "X-XSRF-TOKEN": csrfToken
+    };
+}
+
+function hasRole(user, role) {
+    if (!user || !Array.isArray(user.roles)) {
+        return false;
+    }
+
+    const roleName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+    return user.roles.includes(roleName);
+}
+
+function canManageTopics(user) {
+    return hasRole(user, "CONTENT_MANAGER");
+}
+
+function canEditHotspots(user) {
+    return canManageTopics(user) || hasRole(user, "HOTSPOT_EDITOR");
+}
+
+async function logout(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    window.location.assign("/logout");
 }
 
 function attachLogoutButton(buttonId = "logoutBtn") {
-    const button = document.getElementById(buttonId);
-    if (!button) return;
-    button.addEventListener("click", logout);
+    const buttons = document.querySelectorAll(`[id="${buttonId}"]`);
+    buttons.forEach(button => {
+        if (button.dataset.logoutAttached === "true") return;
+
+        button.dataset.logoutAttached = "true";
+        button.addEventListener("click", logout);
+    });
 }
